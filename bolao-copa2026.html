@@ -139,9 +139,12 @@ const TODOS_TIMES = Object.values(GRUPOS).flat();
 const SENHA_ADMIN = "copa2026";
 
 // ═══════════════════════════════════════
-// CLASSIFICAÇÃO DO GRUPO
+// CLASSIFICAÇÃO DO GRUPO — critérios oficiais FIFA 2026
+// 1) Pts confronto direto  2) SG confronto direto  3) GF confronto direto
+// 4) SG geral  5) GF geral  6) Fair play (não implementado — empate raro)
+// 7) Ranking FIFA (não implementado — usado só em sorteio)
 // ═══════════════════════════════════════
-function calcClassificacao(grupo, resultados) {
+function calcStatsGrupo(grupo, resultados) {
   const times = GRUPOS[grupo];
   const stats = {};
   times.forEach(t => stats[t] = {t, pts:0, j:0, v:0, e:0, d:0, gf:0, gc:0, sg:0});
@@ -149,23 +152,79 @@ function calcClassificacao(grupo, resultados) {
     const r = resultados[j.id];
     if (!r || r.c == null || r.f == null) return;
     const ca = stats[j.c], fo = stats[j.f];
-    ca.j++; fo.j++; ca.gf+=r.c; ca.gc+=r.f; fo.gf+=r.f; fo.gc+=r.c;
-    ca.sg = ca.gf-ca.gc; fo.sg = fo.gf-fo.gc;
-    if (r.c > r.f) { ca.pts+=3; ca.v++; fo.d++; }
+    ca.j++; fo.j++;
+    ca.gf += r.c; ca.gc += r.f;
+    fo.gf += r.f; fo.gc += r.c;
+    ca.sg = ca.gf - ca.gc; fo.sg = fo.gf - fo.gc;
+    if (r.c > r.f)      { ca.pts+=3; ca.v++; fo.d++; }
     else if (r.c < r.f) { fo.pts+=3; fo.v++; ca.d++; }
-    else { ca.pts+=1; fo.pts+=1; ca.e++; fo.e++; }
+    else                { ca.pts+=1; fo.pts+=1; ca.e++; fo.e++; }
   });
-  return Object.values(stats).sort((a,b) => b.pts-a.pts||b.sg-a.sg||b.gf-a.gf);
+  return stats;
 }
 
-// Encontra os 8 melhores terceiros
+// Stats apenas nos confrontos diretos entre um subconjunto de times
+function calcH2H(times, grupo, resultados) {
+  const h = {};
+  times.forEach(t => h[t] = {pts:0, sg:0, gf:0});
+  JOGOS.filter(j => j.g === grupo && times.includes(j.c) && times.includes(j.f)).forEach(j => {
+    const r = resultados[j.id];
+    if (!r || r.c == null || r.f == null) return;
+    h[j.c].gf += r.c; h[j.c].sg += r.c - r.f;
+    h[j.f].gf += r.f; h[j.f].sg += r.f - r.c;
+    if (r.c > r.f)      { h[j.c].pts+=3; }
+    else if (r.c < r.f) { h[j.f].pts+=3; }
+    else                { h[j.c].pts+=1; h[j.f].pts+=1; }
+  });
+  return h;
+}
+
+function calcClassificacao(grupo, resultados) {
+  const statsMap = calcStatsGrupo(grupo, resultados);
+  const arr = Object.values(statsMap);
+
+  // Comparador completo com critérios FIFA 2026
+  function cmp(a, b, subset) {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    // Critérios H2H (só faz sentido se tivermos subconjunto)
+    if (subset && subset.length >= 2) {
+      const h = calcH2H(subset.map(x=>x.t), grupo, resultados);
+      const ha = h[a.t], hb = h[b.t];
+      if (hb.pts !== ha.pts) return hb.pts - ha.pts;
+      if (hb.sg  !== ha.sg)  return hb.sg  - ha.sg;
+      if (hb.gf  !== ha.gf)  return hb.gf  - ha.gf;
+    }
+    // Critérios gerais
+    if (b.sg !== a.sg) return b.sg - a.sg;
+    if (b.gf !== a.gf) return b.gf - a.gf;
+    return 0;
+  }
+
+  // Ordena com critérios H2H aplicados apenas entre times empatados em pts
+  arr.sort((a, b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    // Agrupa times com mesmo pts para calcular H2H
+    const grupo_pts = arr.filter(x => x.pts === a.pts);
+    return cmp(a, b, grupo_pts);
+  });
+
+  return arr;
+}
+
+// Encontra os 8 melhores terceiros — critérios FIFA: Pts, SG, GF
 function getMelhoresTerceiros(resultados) {
   const terceiros = [];
   Object.keys(GRUPOS).forEach(g => {
     const cl = calcClassificacao(g, resultados);
     if (cl[2] && cl[2].j > 0) terceiros.push({...cl[2], grupo:g});
   });
-  return terceiros.sort((a,b) => b.pts-a.pts||b.sg-a.sg||b.gf-a.gf).slice(0,8);
+  // Para melhores terceiros: pts → sg → gf (sem H2H entre grupos diferentes)
+  return terceiros.sort((a,b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    if (b.sg  !== a.sg)  return b.sg  - a.sg;
+    if (b.gf  !== a.gf)  return b.gf  - a.gf;
+    return 0;
+  }).slice(0,8);
 }
 
 // Resolve "3ABCDF" etc. → time real baseado nos 8 melhores terceiros
@@ -369,35 +428,74 @@ function renderGrupos(cont){
 }
 
 function criarTabClassificacao(grupo){
-  const cl=calcClassificacao(grupo,resultados);
-  const wrap=document.createElement("div");
-  wrap.style.cssText="margin-top:14px;background:#060e06;border:1px solid #1a3a1a;border-radius:12px;overflow:hidden";
+  const cl = calcClassificacao(grupo, resultados);
+  const jogosDisputados = JOGOS.filter(j => j.g === grupo && resultados[j.id] != null).length;
+  const totalJogos = JOGOS.filter(j => j.g === grupo).length;
 
-  const titulo=document.createElement("div");
-  titulo.style.cssText="padding:8px 12px;background:#0a1a0a;font-size:.72rem;font-weight:800;color:#86efac;letter-spacing:1px;border-bottom:1px solid #1a3a1a";
-  titulo.textContent="📊 CLASSIFICAÇÃO DO GRUPO";
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "margin-top:14px;background:#060e06;border:1px solid #1a3a1a;border-radius:12px;overflow:hidden";
+
+  // Título com progresso
+  const titulo = document.createElement("div");
+  titulo.style.cssText = "padding:8px 12px;background:#0a1a0a;font-size:.72rem;font-weight:800;color:#86efac;letter-spacing:1px;border-bottom:1px solid #1a3a1a;display:flex;justify-content:space-between;align-items:center";
+  titulo.innerHTML = `<span>📊 CLASSIFICAÇÃO — GRUPO ${grupo}</span><span style="color:#3a6a3a;font-weight:400">${jogosDisputados}/${totalJogos} jogos</span>`;
   wrap.appendChild(titulo);
 
-  // Header tabela
-  const header=document.createElement("div");
-  header.style.cssText="display:grid;grid-template-columns:24px 1fr 28px 28px 28px 28px 28px 32px;gap:2px;padding:5px 10px;font-size:.65rem;color:#4a7a4a;font-weight:700;border-bottom:1px solid #0d1a0d";
-  header.innerHTML="<div>#</div><div>Time</div><div>J</div><div>V</div><div>E</div><div>D</div><div>SG</div><div style='text-align:right'>Pts</div>";
+  if (jogosDisputados === 0) {
+    const vazio = document.createElement("div");
+    vazio.style.cssText = "padding:14px;text-align:center;color:#3a6a3a;font-size:.75rem";
+    vazio.textContent = "Aguardando resultados...";
+    wrap.appendChild(vazio);
+    return wrap;
+  }
+
+  // Header: #, Time, J, V, E, D, GF, GC, SG, Pts
+  const cols = "20px 1fr 22px 22px 22px 22px 26px 26px 30px 30px";
+  const header = document.createElement("div");
+  header.style.cssText = `display:grid;grid-template-columns:${cols};gap:1px;padding:5px 10px;font-size:.62rem;color:#4a7a4a;font-weight:700;border-bottom:1px solid #0d1a0d;text-align:center`;
+  header.innerHTML = "<div>#</div><div style='text-align:left'>Time</div><div>J</div><div>V</div><div>E</div><div>D</div><div>GF</div><div>GC</div><div>SG</div><div>Pts</div>";
   wrap.appendChild(header);
 
-  cl.forEach((s,i)=>{
-    const row=document.createElement("div");
-    const cor = i===0?"#22c55e":i===1?"#3b82f6":i===2?"#f59e0b":"#3a6a3a";
-    const bgRow = i<2?"rgba(34,197,94,0.05)":i===2?"rgba(245,158,11,0.05)":"transparent";
-    row.style.cssText=`display:grid;grid-template-columns:24px 1fr 28px 28px 28px 28px 28px 32px;gap:2px;padding:6px 10px;font-size:.75rem;border-bottom:1px solid #0a0f0a;align-items:center;background:${bgRow}`;
-    const badge = i<2?'<span style="font-size:.55rem;background:#22c55e;color:#000;border-radius:3px;padding:1px 3px;margin-left:3px">✓</span>':i===2?'<span style="font-size:.55rem;background:#f59e0b;color:#000;border-radius:3px;padding:1px 3px;margin-left:3px">?</span>':"";
-    row.innerHTML=`<div style="color:${cor};font-weight:700">${i+1}</div><div style="display:flex;align-items:center;gap:3px">${BF(s.t)} <span style="color:#ccc">${s.t}</span>${badge}</div><div style="text-align:center;color:#888">${s.j}</div><div style="text-align:center;color:#888">${s.v}</div><div style="text-align:center;color:#888">${s.e}</div><div style="text-align:center;color:#888">${s.d}</div><div style="text-align:center;color:${s.sg>0?"#22c55e":s.sg<0?"#f87171":"#888"}">${s.sg>0?"+":""}${s.sg}</div><div style="text-align:right;font-weight:900;color:${cor}">${s.pts}</div>`;
+  cl.forEach((s, i) => {
+    const cor = i===0?"#22c55e":i===1?"#3b82f6":i===2?"#f59e0b":"#4a6a4a";
+    const bgRow = i<2?"rgba(34,197,94,0.06)":i===2?"rgba(245,158,11,0.05)":"transparent";
+    const badge = i<2
+      ? '<span style="font-size:.5rem;background:#22c55e;color:#000;border-radius:3px;padding:1px 3px;margin-left:2px;vertical-align:middle">✓</span>'
+      : i===2
+        ? '<span style="font-size:.5rem;background:#f59e0b;color:#000;border-radius:3px;padding:1px 3px;margin-left:2px;vertical-align:middle">?</span>'
+        : "";
+    const sgStr = s.sg > 0 ? `+${s.sg}` : `${s.sg}`;
+    const sgCor = s.sg > 0 ? "#22c55e" : s.sg < 0 ? "#f87171" : "#888";
+
+    const row = document.createElement("div");
+    row.style.cssText = `display:grid;grid-template-columns:${cols};gap:1px;padding:7px 10px;font-size:.72rem;border-bottom:1px solid #0a0f0a;align-items:center;text-align:center;background:${bgRow}`;
+    row.innerHTML = `
+      <div style="color:${cor};font-weight:800">${i+1}</div>
+      <div style="text-align:left;display:flex;align-items:center;gap:3px;overflow:hidden">
+        <span style="font-size:1rem">${BF(s.t)}</span>
+        <span style="color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.7rem">${s.t}</span>
+        ${badge}
+      </div>
+      <div style="color:#999">${s.j}</div>
+      <div style="color:${s.v>0?"#22c55e":"#666"}">${s.v}</div>
+      <div style="color:${s.e>0?"#f59e0b":"#666"}">${s.e}</div>
+      <div style="color:${s.d>0?"#f87171":"#666"}">${s.d}</div>
+      <div style="color:#999">${s.gf}</div>
+      <div style="color:#999">${s.gc}</div>
+      <div style="color:${sgCor};font-weight:700">${sgStr}</div>
+      <div style="color:${cor};font-weight:900;font-size:.8rem">${s.pts}</div>
+    `;
     wrap.appendChild(row);
   });
 
   // Legenda
-  const leg=document.createElement("div");
-  leg.style.cssText="padding:6px 10px;font-size:.62rem;color:#3a4a3a;display:flex;gap:12px";
-  leg.innerHTML=`<span><span style="color:#22c55e">✓</span> Classificado</span><span><span style="color:#f59e0b">?</span> Possível 3º melhor</span>`;
+  const leg = document.createElement("div");
+  leg.style.cssText = "padding:6px 10px;font-size:.6rem;color:#3a4a3a;display:flex;gap:14px;flex-wrap:wrap";
+  leg.innerHTML = `
+    <span><span style="color:#22c55e">✓</span> Classificado (Top 2)</span>
+    <span><span style="color:#f59e0b">?</span> Possível 3º melhor</span>
+    <span style="color:#2a3a2a">Desempate: H2H → SG → GF</span>
+  `;
   wrap.appendChild(leg);
 
   return wrap;
@@ -549,38 +647,67 @@ function renderElim(cont){
 }
 
 function criarTabTerceiros(){
-  const wrap=document.createElement("div");
-  wrap.style.cssText="background:#0a0f08;border:1px solid #1a3a1a;border-radius:12px;overflow:hidden;margin-bottom:14px";
-  const titulo=document.createElement("div");
-  titulo.style.cssText="padding:8px 12px;background:#0a1a0a;font-size:.72rem;font-weight:800;color:#f59e0b;letter-spacing:1px;border-bottom:1px solid #1a3a1a";
-  titulo.textContent="🥉 8 MELHORES TERCEIROS COLOCADOS";
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "background:#0a0f08;border:1px solid #1a3a1a;border-radius:12px;overflow:hidden;margin-bottom:14px";
+
+  const titulo = document.createElement("div");
+  titulo.style.cssText = "padding:8px 12px;background:#0a1a0a;font-size:.72rem;font-weight:800;color:#f59e0b;letter-spacing:1px;border-bottom:1px solid #1a3a1a;display:flex;justify-content:space-between";
+  titulo.innerHTML = "<span>🥉 8 MELHORES TERCEIROS COLOCADOS</span><span style='color:#3a6a3a;font-weight:400'>Critério: Pts → SG → GF</span>";
   wrap.appendChild(titulo);
 
-  const header=document.createElement("div");
-  header.style.cssText="display:grid;grid-template-columns:28px 24px 1fr 28px 28px 28px 32px;gap:2px;padding:5px 10px;font-size:.65rem;color:#4a7a4a;font-weight:700;border-bottom:1px solid #0d1a0d";
-  header.innerHTML="<div>Pos</div><div>Gr</div><div>Time</div><div>J</div><div>SG</div><div>GF</div><div style='text-align:right'>Pts</div>";
+  const todos = [];
+  Object.keys(GRUPOS).forEach(g => {
+    const cl = calcClassificacao(g, resultados);
+    if (cl[2] && cl[2].j > 0) todos.push({...cl[2], grupo:g});
+  });
+  todos.sort((a,b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    if (b.sg  !== a.sg)  return b.sg  - a.sg;
+    if (b.gf  !== a.gf)  return b.gf  - a.gf;
+    return 0;
+  });
+
+  if (todos.length === 0) {
+    const msg = document.createElement("div");
+    msg.style.cssText = "padding:14px;text-align:center;color:#3a6a3a;font-size:.75rem";
+    msg.textContent = "Aguardando resultados dos grupos...";
+    wrap.appendChild(msg);
+    return wrap;
+  }
+
+  const cols = "28px 22px 1fr 24px 26px 26px 26px 30px";
+  const header = document.createElement("div");
+  header.style.cssText = `display:grid;grid-template-columns:${cols};gap:1px;padding:5px 10px;font-size:.62rem;color:#4a7a4a;font-weight:700;border-bottom:1px solid #0d1a0d;text-align:center`;
+  header.innerHTML = "<div>Pos</div><div>Gr</div><div style='text-align:left'>Time</div><div>J</div><div>GF</div><div>GC</div><div>SG</div><div>Pts</div>";
   wrap.appendChild(header);
 
-  const todos=[];
-  Object.keys(GRUPOS).forEach(g=>{
-    const cl=calcClassificacao(g,resultados);
-    if(cl[2]&&cl[2].j>0) todos.push({...cl[2],grupo:g});
-  });
-  todos.sort((a,b)=>b.pts-a.pts||b.sg-a.sg||b.gf-a.gf);
+  todos.forEach((s, i) => {
+    const classificado = i < 8;
+    const cor = classificado ? "#f59e0b" : "#3a6a3a";
+    const bg = classificado ? "rgba(245,158,11,0.06)" : "transparent";
+    const sgStr = s.sg > 0 ? `+${s.sg}` : `${s.sg}`;
+    const sgCor = s.sg > 0 ? "#22c55e" : s.sg < 0 ? "#f87171" : "#888";
 
-  todos.slice(0,8).forEach((s,i)=>{
-    const row=document.createElement("div");
-    row.style.cssText="display:grid;grid-template-columns:28px 24px 1fr 28px 28px 28px 32px;gap:2px;padding:6px 10px;font-size:.75rem;border-bottom:1px solid #0a0f0a;align-items:center;background:rgba(245,158,11,0.05)";
-    row.innerHTML=`<div style="color:#f59e0b;font-weight:700">${i+1}º</div><div style="color:#888;font-weight:700">${s.grupo}</div><div>${BF(s.t)} <span style="color:#ccc">${s.t}</span></div><div style="text-align:center;color:#888">${s.j}</div><div style="text-align:center;color:${s.sg>0?"#22c55e":s.sg<0?"#f87171":"#888"}">${s.sg>0?"+":""}${s.sg}</div><div style="text-align:center;color:#888">${s.gf}</div><div style="text-align:right;font-weight:900;color:#f59e0b">${s.pts}</div>`;
+    const row = document.createElement("div");
+    row.style.cssText = `display:grid;grid-template-columns:${cols};gap:1px;padding:6px 10px;font-size:.72rem;border-bottom:1px solid #0a0f0a;align-items:center;text-align:center;background:${bg}`;
+    row.innerHTML = `
+      <div style="color:${cor};font-weight:800">${i+1}º${classificado&&i<8?'<span style="font-size:.5rem;background:#f59e0b;color:#000;border-radius:3px;padding:0 2px;margin-left:1px">✓</span>':''}</div>
+      <div style="color:#888;font-weight:700">${s.grupo}</div>
+      <div style="text-align:left;display:flex;align-items:center;gap:2px"><span>${BF(s.t)}</span><span style="color:#ccc;font-size:.68rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.t}</span></div>
+      <div style="color:#999">${s.j}</div>
+      <div style="color:#999">${s.gf}</div>
+      <div style="color:#999">${s.gc}</div>
+      <div style="color:${sgCor};font-weight:700">${sgStr}</div>
+      <div style="color:${cor};font-weight:900">${s.pts}</div>
+    `;
     wrap.appendChild(row);
   });
 
-  if(todos.length<4){
-    const msg=document.createElement("div");
-    msg.style.cssText="padding:12px;text-align:center;color:#3a6a3a;font-size:.75rem";
-    msg.textContent="Aguardando mais resultados dos grupos...";
-    wrap.appendChild(msg);
-  }
+  const leg = document.createElement("div");
+  leg.style.cssText = "padding:6px 10px;font-size:.6rem;color:#3a4a3a";
+  leg.innerHTML = `<span style="color:#f59e0b">✓</span> Top 8 avançam para os 32-avos &nbsp;|&nbsp; Desempate: Pts → SG → GF`;
+  wrap.appendChild(leg);
+
   return wrap;
 }
 
