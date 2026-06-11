@@ -212,36 +212,48 @@ function calcClassificacao(grupo, resultados) {
 }
 
 // Encontra os 8 melhores terceiros — critérios FIFA: Pts, SG, GF
-function getMelhoresTerceiros(resultados) {
+function getMelhoresTerceiros(res) {
   const terceiros = [];
   Object.keys(GRUPOS).forEach(g => {
-    const cl = calcClassificacao(g, resultados);
+    const cl = calcClassificacao(g, res);
     if (cl[2] && cl[2].j > 0) terceiros.push({...cl[2], grupo:g});
   });
-  // Para melhores terceiros: pts → sg → gf (sem H2H entre grupos diferentes)
   return terceiros.sort((a,b) => {
     if (b.pts !== a.pts) return b.pts - a.pts;
     if (b.sg  !== a.sg)  return b.sg  - a.sg;
     if (b.gf  !== a.gf)  return b.gf  - a.gf;
     return 0;
-  }).slice(0,8);
+  });
+}
+
+// Constrói resultados mesclados (palpites + reais) para TODOS os grupos
+function buildResMesclado() {
+  const rm = {};
+  JOGOS.forEach(j => {
+    if (resultados[j.id] != null) {
+      rm[j.id] = resultados[j.id];
+    } else {
+      const p = (pals.grupo||{})[j.id];
+      if (p && p.c != null && p.f != null) rm[j.id] = {c:p.c, f:p.f};
+    }
+  });
+  return rm;
 }
 
 // Resolve "3ABCDF" etc. → time real baseado nos 8 melhores terceiros
-function resolverTerceiro(pool, resultados) {
+function resolverTerceiro(pool, res) {
   const grupos = pool.replace("3","").split("");
-  const melhores = getMelhoresTerceiros(resultados);
+  const melhores = getMelhoresTerceiros(res).slice(0,8);
   const terceirosDoPool = melhores.filter(t => grupos.includes(t.grupo));
   if (terceirosDoPool.length === 0) return null;
   return terceirosDoPool[0].t;
 }
 
-// Resolve ex "1A" → classificado no grupo A
-function resolverSlot(slot, resultados) {
-  if (slot.startsWith("3")) return resolverTerceiro(slot, resultados);
+function resolverSlot(slot, res) {
+  if (slot.startsWith("3")) return resolverTerceiro(slot, res);
   const pos = parseInt(slot[0])-1;
   const grupo = slot[1];
-  const cl = calcClassificacao(grupo, resultados);
+  const cl = calcClassificacao(grupo, res);
   return cl[pos]?.t || null;
 }
 
@@ -588,15 +600,17 @@ function renderElim(cont){
   });
   cont.appendChild(abas);
 
+  // Resultados mesclados (palpites + reais) para simular classificação e confrontos
+  const rm = buildResMesclado();
+
   if(faseAtiva==="32avos"){
-    // Mostrar cruzamentos automáticos baseados na classificação
     const box=document.createElement("div");
     box.style.cssText="background:#080f1a;border:1px solid #1e3a5f;border-radius:12px;padding:14px;margin-bottom:14px";
-    box.innerHTML=`<div style="font-weight:800;color:#93c5fd;font-size:.78rem;margin-bottom:4px;letter-spacing:1px">32-AVOS DE FINAL — CRUZAMENTOS OFICIAIS FIFA</div><div style="font-size:.68rem;color:#3a5a7a;margin-bottom:12px">Classificados automaticamente conforme resultado dos grupos</div>`;
+    box.innerHTML=`<div style="font-weight:800;color:#93c5fd;font-size:.78rem;margin-bottom:4px;letter-spacing:1px">32-AVOS DE FINAL — CRUZAMENTOS OFICIAIS FIFA</div><div style="font-size:.68rem;color:#3a5a7a;margin-bottom:12px">Simulado com base nos seus palpites · Atualiza conforme resultados reais</div>`;
 
     CRUZAMENTOS_FIXOS.forEach(cr=>{
-      const timeCasa=resolverSlot(cr.casa,resultados);
-      const timeFora=resolverSlot(cr.fora,resultados);
+      const timeCasa=resolverSlot(cr.casa,rm);
+      const timeFora=resolverSlot(cr.fora,rm);
       const jogoConfirmado=(elimJogos["32avos"]||[]).find(j=>j.id===cr.id);
       const res=jogoConfirmado?(elimRes[jogoConfirmado.id]||null):null;
 
@@ -653,8 +667,8 @@ function renderElim(cont){
     });
     cont.appendChild(box);
 
-    // Melhores terceiros colocados
-    cont.appendChild(criarTabTerceiros());
+    // Melhores terceiros colocados (simulado com palpites + reais)
+    cont.appendChild(criarTabTerceiros(rm));
 
   } else {
     // Outras fases: manual
@@ -662,26 +676,18 @@ function renderElim(cont){
   }
 }
 
-function criarTabTerceiros(){
+function criarTabTerceiros(res){
+  // res = resultados mesclados (palpites + reais)
+  const resUsado = res || buildResMesclado();
   const wrap = document.createElement("div");
   wrap.style.cssText = "background:#0a0f08;border:1px solid #1a3a1a;border-radius:12px;overflow:hidden;margin-bottom:14px";
 
   const titulo = document.createElement("div");
-  titulo.style.cssText = "padding:8px 12px;background:#0a1a0a;font-size:.72rem;font-weight:800;color:#f59e0b;letter-spacing:1px;border-bottom:1px solid #1a3a1a;display:flex;justify-content:space-between";
-  titulo.innerHTML = "<span>🥉 8 MELHORES TERCEIROS COLOCADOS</span><span style='color:#3a6a3a;font-weight:400'>Critério: Pts → SG → GF</span>";
+  titulo.style.cssText = "padding:8px 12px;background:#0a1a0a;font-size:.72rem;font-weight:800;color:#f59e0b;letter-spacing:1px;border-bottom:1px solid #1a3a1a;display:flex;justify-content:space-between;align-items:center";
+  titulo.innerHTML = "<span>🥉 TODOS OS TERCEIROS COLOCADOS</span><span style='background:#1a2a4a;color:#93c5fd;font-size:.58rem;padding:1px 5px;border-radius:4px'>SIMULADO</span>";
   wrap.appendChild(titulo);
 
-  const todos = [];
-  Object.keys(GRUPOS).forEach(g => {
-    const cl = calcClassificacao(g, resultados);
-    if (cl[2] && cl[2].j > 0) todos.push({...cl[2], grupo:g});
-  });
-  todos.sort((a,b) => {
-    if (b.pts !== a.pts) return b.pts - a.pts;
-    if (b.sg  !== a.sg)  return b.sg  - a.sg;
-    if (b.gf  !== a.gf)  return b.gf  - a.gf;
-    return 0;
-  });
+  const todos = getMelhoresTerceiros(resUsado);
 
   if (todos.length === 0) {
     const msg = document.createElement("div");
@@ -691,25 +697,34 @@ function criarTabTerceiros(){
     return wrap;
   }
 
-  const cols = "28px 22px 1fr 24px 26px 26px 26px 30px";
+  const cols = "20px 20px 1fr 22px 24px 24px 28px 28px";
   const header = document.createElement("div");
   header.style.cssText = `display:grid;grid-template-columns:${cols};gap:1px;padding:5px 10px;font-size:.62rem;color:#4a7a4a;font-weight:700;border-bottom:1px solid #0d1a0d;text-align:center`;
-  header.innerHTML = "<div>Pos</div><div>Gr</div><div style='text-align:left'>Time</div><div>J</div><div>GF</div><div>GC</div><div>SG</div><div>Pts</div>";
+  header.innerHTML = "<div>#</div><div>Gr</div><div style='text-align:left'>Time</div><div>J</div><div>GF</div><div>GC</div><div>SG</div><div>Pts</div>";
   wrap.appendChild(header);
 
+  // Mostra TODOS os 12 terceiros com linha de corte após o 8º
   todos.forEach((s, i) => {
+    // Linha divisória antes do 9º (os que NÃO classificam)
+    if (i === 8) {
+      const div = document.createElement("div");
+      div.style.cssText = "border-top:2px dashed #3a2a00;padding:4px 10px;font-size:.6rem;color:#f87171;text-align:center;background:rgba(248,113,113,0.05)";
+      div.textContent = "── abaixo não classificam ──";
+      wrap.appendChild(div);
+    }
     const classificado = i < 8;
-    const cor = classificado ? "#f59e0b" : "#3a6a3a";
-    const bg = classificado ? "rgba(245,158,11,0.06)" : "transparent";
+    const cor = classificado ? "#f59e0b" : "#3a3a3a";
+    const bg = i === 7 ? "rgba(245,158,11,0.1)" : classificado ? "rgba(245,158,11,0.04)" : "transparent";
     const sgStr = s.sg > 0 ? `+${s.sg}` : `${s.sg}`;
     const sgCor = s.sg > 0 ? "#22c55e" : s.sg < 0 ? "#f87171" : "#888";
+    const badge = classificado ? '<span style="font-size:.5rem;background:#f59e0b;color:#000;border-radius:3px;padding:0 2px;margin-left:1px">✓</span>' : '';
 
     const row = document.createElement("div");
     row.style.cssText = `display:grid;grid-template-columns:${cols};gap:1px;padding:6px 10px;font-size:.72rem;border-bottom:1px solid #0a0f0a;align-items:center;text-align:center;background:${bg}`;
     row.innerHTML = `
-      <div style="color:${cor};font-weight:800">${i+1}º${classificado&&i<8?'<span style="font-size:.5rem;background:#f59e0b;color:#000;border-radius:3px;padding:0 2px;margin-left:1px">✓</span>':''}</div>
+      <div style="color:${cor};font-weight:800">${i+1}${badge}</div>
       <div style="color:#888;font-weight:700">${s.grupo}</div>
-      <div style="text-align:left;display:flex;align-items:center;gap:2px"><span>${BF(s.t)}</span><span style="color:#ccc;font-size:.68rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.t}</span></div>
+      <div style="text-align:left;display:flex;align-items:center;gap:2px"><span>${BF(s.t)}</span><span style="color:${classificado?"#ddd":"#555"};font-size:.68rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.t}</span></div>
       <div style="color:#999">${s.j}</div>
       <div style="color:#999">${s.gf}</div>
       <div style="color:#999">${s.gc}</div>
@@ -719,9 +734,16 @@ function criarTabTerceiros(){
     wrap.appendChild(row);
   });
 
+  if (todos.length === 0) {
+    const msg = document.createElement("div");
+    msg.style.cssText = "padding:14px;text-align:center;color:#3a6a3a;font-size:.75rem";
+    msg.textContent = "Preencha seus palpites para simular!";
+    wrap.appendChild(msg);
+  }
+
   const leg = document.createElement("div");
-  leg.style.cssText = "padding:6px 10px;font-size:.6rem;color:#3a4a3a";
-  leg.innerHTML = `<span style="color:#f59e0b">✓</span> Top 8 avançam para os 32-avos &nbsp;|&nbsp; Desempate: Pts → SG → GF`;
+  leg.style.cssText = "padding:6px 10px;font-size:.6rem;color:#3a4a3a;line-height:1.8";
+  leg.innerHTML = "<span style='color:#f59e0b'>✓</span> Top 8 avançam para os 32-avos &nbsp;|&nbsp; 📝 Baseado nos palpites + reais &nbsp;|&nbsp; Desempate: Pts → SG → GF";
   wrap.appendChild(leg);
 
   return wrap;
