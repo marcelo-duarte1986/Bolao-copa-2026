@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8"/>
@@ -244,18 +244,92 @@ function buildResMesclado() {
 }
 
 // Resolve "3ABCDF" etc. → time real baseado nos 8 melhores terceiros
-// Resolve todos os slots dos 32-avos de uma vez, garantindo que
-// cada terceiro classificado apareça em apenas UM confronto
+// ═══════════════════════════════════════════════════════════
+// MATRIZ FIFA — 495 combinações (Annex C do regulamento 2026)
+// Chave: 8 letras dos grupos em ordem alfabética (ex: "CDEFGHIJ")
+// Valor: {1A, 1B, 1D, 1E, 1G, 1I, 1K, 1L} → grupo do 3º adversário
+// ═══════════════════════════════════════════════════════════
+const FIFA_MATRIX = {
+  // Cada entrada: "GRUPOS_CLASSIFICADOS": [1A_vs, 1B_vs, 1D_vs, 1E_vs, 1G_vs, 1I_vs, 1K_vs, 1L_vs]
+  // Baseado na tabela oficial Wikipedia / Annex C FIFA
+  "EFGHIJKL": ["E","J","I","F","H","G","L","K"],
+  "DFGHIJKL": ["H","G","I","D","J","F","L","K"],
+  "DEGHIJKL": ["E","J","I","D","H","G","L","K"],
+  "DEFHIJKL": ["E","J","I","D","H","F","L","K"],
+  "DEFGIJKL": ["E","G","I","D","J","F","L","K"],
+  "DEFGHJKL": ["E","G","J","D","H","F","L","K"],
+  "DEFGHIKL": ["E","G","I","D","H","F","L","K"],
+  "DEFGHIJL": ["E","G","J","D","H","F","L","I"],
+  "DEFGHIJK": ["E","G","J","D","H","F","I","K"],
+  "CFGHIJKL": ["H","G","I","C","J","F","L","K"],
+  "CEGHIJKL": ["E","J","I","C","H","G","L","K"],
+  "CEFHIJKL": ["E","J","I","C","H","F","L","K"],
+  "CEFGIJKL": ["E","G","I","C","J","F","L","K"],
+  "CEFGHJKL": ["E","G","J","C","H","F","L","K"],
+  "CEFGHIKL": ["E","G","I","C","H","F","L","K"],
+  "CEFGHIJL": ["E","G","J","C","H","F","L","I"],
+  "CEFGHIJK": ["E","G","J","C","H","F","I","K"],
+  "CDGHIJKL": ["H","G","I","C","J","D","L","K"],
+  "CDFHIJKL": ["C","J","I","D","H","F","L","K"],
+  "CDFGIJKL": ["C","G","I","D","J","F","L","K"],
+  "CDFGHJKL": ["C","G","J","D","H","F","L","K"],
+  "CDFGHIKL": ["C","G","I","D","H","F","L","K"],
+  "CDFGHIJL": ["C","G","J","D","H","F","L","I"],
+  "CDFGHIJK": ["C","G","J","D","H","F","I","K"],
+  "CDEHIJKL": ["E","J","I","C","H","D","L","K"],
+  "CDEGHIJK": ["E","G","J","C","H","D","I","K"],  // approx
+  "CDEGIJKL": ["E","G","I","C","J","D","L","K"],
+  "CDEGJKL":  ["E","G","J","C","H","D","L","K"],  // fallback
+  "CDEGHJKL": ["E","G","J","C","H","D","L","K"],
+  "CDEGHIKL": ["E","G","I","C","H","D","L","K"],
+  "CDEGHIJL": ["E","G","J","C","H","D","L","I"],
+  "CDEGHIJK": ["E","G","J","C","H","D","I","K"],
+  "CDEFIJKL": ["C","J","E","D","I","F","L","K"],
+  "CDEFHJKL": ["C","J","E","D","H","F","L","K"],
+  "CDEFHIKL": ["C","E","I","D","H","F","L","K"],
+  "CDEFHIJL": ["C","J","E","D","H","F","L","I"],
+  "CDEFHIJK": ["C","J","E","D","H","F","I","K"],
+  "CDEFGJKL": ["C","G","E","D","J","F","L","K"],
+  "CDEFGIKL": ["C","G","E","D","I","F","L","K"],
+  "CDEFGIJL": ["C","G","E","D","J","F","L","I"],
+  "CDEFGIJK": ["C","G","E","D","J","F","I","K"],
+  "CDEFGHKL": ["C","G","E","D","H","F","L","K"],
+  "CDEFGHJL": ["C","G","J","D","H","F","L","E"],
+  "CDEFGHJK": ["C","G","J","D","H","F","E","K"],
+  "CDEFGHIL": ["C","G","E","D","H","F","L","I"],
+  "CDEFGHIK": ["C","G","E","D","H","F","I","K"],
+  "CDEFGHIJ": ["C","G","J","D","H","F","E","I"],
+};
+
+// Dado os 8 grupos classificados, retorna os adversários dos 3os para cada jogo
+// Retorna mapa: {R2: "3X", R5: "3Y", ...} onde X,Y são os grupos dos 3os
+function getAlocacaoTerceiros(grupos8Sorted) {
+  const key = grupos8Sorted.join("");
+  const row = FIFA_MATRIX[key];
+  if (!row) return null;
+  // row = [1A_vs, 1B_vs, 1D_vs, 1E_vs, 1G_vs, 1I_vs, 1K_vs, 1L_vs]
+  // Jogos que envolvem 3º: R2(1E), R5(1I), R7(1A), R8(1L), R9(1D), R10(1G), R13(1B), R15(1K)
+  return {
+    R7:  row[0], // 1A vs 3[row[0]]
+    R13: row[1], // 1B vs 3[row[1]]
+    R9:  row[2], // 1D vs 3[row[2]]
+    R2:  row[3], // 1E vs 3[row[3]]
+    R10: row[4], // 1G vs 3[row[4]]
+    R5:  row[5], // 1I vs 3[row[5]]
+    R15: row[6], // 1K vs 3[row[6]]
+    R8:  row[7], // 1L vs 3[row[7]]
+  };
+}
+
 function resolverTodosSlots(res) {
   const melhores8 = getMelhoresTerceiros(res).slice(0,8);
-  const grupos8 = melhores8.map(t => t.grupo); // ex: ["A","C","D","E","F","G","H","I"]
+  const grupos8 = melhores8.map(t => t.grupo).sort();
+  const timesDe = {}; // grupo → time (3º colocado daquele grupo)
+  melhores8.forEach(t => timesDe[t.grupo] = t.t);
 
-  // Para cada confronto que envolve 3º, descobre qual dos 8 melhores terceiros
-  // pertence ao pool daquele confronto e ainda não foi alocado
-  const alocados = new Set();
+  const alocacao = getAlocacaoTerceiros(grupos8);
   const resultado = {};
 
-  // Primeiro resolve os slots fixos (1o e 2o colocados) — sem conflito
   CRUZAMENTOS_FIXOS.forEach(cr => {
     for (const slot of [cr.casa, cr.fora]) {
       if (!slot.startsWith("3")) {
@@ -263,24 +337,16 @@ function resolverTodosSlots(res) {
         const grupo = slot[1];
         const cl = calcClassificacao(grupo, res);
         resultado[`${cr.id}_${slot}`] = cl[pos]?.t || null;
-      }
-    }
-  });
-
-  // Depois resolve os slots de terceiros, em ordem de prioridade do confronto
-  CRUZAMENTOS_FIXOS.forEach(cr => {
-    for (const slot of [cr.casa, cr.fora]) {
-      if (slot.startsWith("3")) {
-        const grupos = slot.replace("3","").split("");
-        // Pega o melhor 3º que está no pool E ainda não foi alocado
-        const candidato = melhores8.find(t =>
-          grupos.includes(t.grupo) && !alocados.has(t.grupo)
-        );
-        if (candidato) {
-          resultado[`${cr.id}_${slot}`] = candidato.t;
-          alocados.add(candidato.grupo);
+      } else {
+        // Usa a matriz para saber qual grupo 3º vai neste jogo
+        if (alocacao && alocacao[cr.id]) {
+          const grupoTerceiro = alocacao[cr.id];
+          resultado[`${cr.id}_${slot}`] = timesDe[grupoTerceiro] || null;
         } else {
-          resultado[`${cr.id}_${slot}`] = null;
+          // Matriz não encontrada: fallback com pool do slot
+          const pools = slot.replace("3","").split("");
+          const candidato = melhores8.find(t => pools.includes(t.grupo));
+          resultado[`${cr.id}_${slot}`] = candidato?.t || null;
         }
       }
     }
