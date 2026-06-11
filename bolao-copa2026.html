@@ -417,8 +417,18 @@ function renderGrupos(cont){
   // Jogos
   JOGOS.filter(j=>j.g===grupoAtivo).forEach(j=>cont.appendChild(criarJogoEl(j,false)));
 
-  // CLASSIFICAÇÃO DO GRUPO
-  cont.appendChild(criarTabClassificacao(grupoAtivo));
+  // Mescla palpites do usuário com resultados reais para simular a classificação
+  // Resultado real tem prioridade; se não há resultado real usa o palpite do usuário
+  const resMesclado = {};
+  JOGOS.filter(j=>j.g===grupoAtivo).forEach(j=>{
+    if (resultados[j.id] != null) {
+      resMesclado[j.id] = resultados[j.id];
+    } else {
+      const p = (pals.grupo||{})[j.id];
+      if (p && p.c != null && p.f != null) resMesclado[j.id] = {c:p.c, f:p.f};
+    }
+  });
+  cont.appendChild(criarTabClassificacao(grupoAtivo, resMesclado));
 
   // Info pontuação
   const info=document.createElement("div");
@@ -427,10 +437,14 @@ function renderGrupos(cont){
   cont.appendChild(info);
 }
 
-function criarTabClassificacao(grupo){
-  const cl = calcClassificacao(grupo, resultados);
-  const jogosDisputados = JOGOS.filter(j => j.g === grupo && resultados[j.id] != null).length;
+function criarTabClassificacao(grupo, resParaCalc){
+  // resParaCalc: mescla de palpites do usuário + resultados reais
+  const cl = calcClassificacao(grupo, resParaCalc || resultados);
+  const temPalpite = JOGOS.filter(j => j.g === grupo && resParaCalc && resParaCalc[j.id] != null).length;
+  const temReal = JOGOS.filter(j => j.g === grupo && resultados[j.id] != null).length;
   const totalJogos = JOGOS.filter(j => j.g === grupo).length;
+  const jogosDisputados = temPalpite;
+  const isPalpite = temReal < temPalpite; // tem jogos simulados por palpite
 
   const wrap = document.createElement("div");
   wrap.style.cssText = "margin-top:14px;background:#060e06;border:1px solid #1a3a1a;border-radius:12px;overflow:hidden";
@@ -438,7 +452,9 @@ function criarTabClassificacao(grupo){
   // Título com progresso
   const titulo = document.createElement("div");
   titulo.style.cssText = "padding:8px 12px;background:#0a1a0a;font-size:.72rem;font-weight:800;color:#86efac;letter-spacing:1px;border-bottom:1px solid #1a3a1a;display:flex;justify-content:space-between;align-items:center";
-  titulo.innerHTML = `<span>📊 CLASSIFICAÇÃO — GRUPO ${grupo}</span><span style="color:#3a6a3a;font-weight:400">${jogosDisputados}/${totalJogos} jogos</span>`;
+  const labelSim = isPalpite ? '<span style="background:#1a2a4a;color:#93c5fd;font-size:.58rem;padding:1px 5px;border-radius:4px;margin-left:5px">SIMULADO</span>' : '';
+  const labelReal = temReal > 0 ? `<span style="color:#22c55e;font-size:.6rem">${temReal} real${temReal>1?'is':''}</span>` : '';
+  titulo.innerHTML = `<span>📊 CLASSIFICAÇÃO — GRUPO ${grupo}${labelSim}</span><span style="color:#3a6a3a;font-weight:400;display:flex;gap:6px;align-items:center">${labelReal}<span>${jogosDisputados}/${totalJogos}</span></span>`;
   wrap.appendChild(titulo);
 
   if (jogosDisputados === 0) {
@@ -492,9 +508,9 @@ function criarTabClassificacao(grupo){
   const leg = document.createElement("div");
   leg.style.cssText = "padding:6px 10px;font-size:.6rem;color:#3a4a3a;display:flex;gap:14px;flex-wrap:wrap";
   leg.innerHTML = `
-    <span><span style="color:#22c55e">✓</span> Classificado (Top 2)</span>
+    <span><span style="color:#22c55e">✓</span> Top 2 — classificado</span>
     <span><span style="color:#f59e0b">?</span> Possível 3º melhor</span>
-    <span style="color:#2a3a2a">Desempate: H2H → SG → GF</span>
+    <span style="color:#2a3a2a">${isPalpite ? "📝 Baseado nos seus palpites" : "✅ Resultados reais"} · Desempate: H2H→SG→GF</span>
   `;
   wrap.appendChild(leg);
 
