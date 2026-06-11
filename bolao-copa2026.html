@@ -116,23 +116,26 @@ const JOGOS = [
 // Cruzamentos 32-avos — fonte oficial FOX Sports / FIFA
 // Formato: [1o_grupo, 2o_grupo, posição_terceiro_pool]
 // 6 jogos são 2o×2o, 10 jogos são 1o×3o
+// Cruzamentos oficiais FIFA — fonte: Wikipedia / regulamento Copa 2026
+// Para terceiros: o pool indica quais grupos podem fornecer o 3º
+// A matriz de 495 combinações define qual 3º específico vai para qual jogo
 const CRUZAMENTOS_FIXOS = [
-  {id:"R1", label:"J73", casa:"2A", fora:"2B", data:"28/06", sede:"Los Angeles"},
-  {id:"R2", label:"J74", casa:"1F", fora:"2C", data:"30/06", sede:"Monterrey"},
-  {id:"R3", label:"J75", casa:"1E", fora:"3ABCDF", data:"29/06", sede:"Boston"},
-  {id:"R4", label:"J76", casa:"1C", fora:"2F", data:"29/06", sede:"Houston"},
-  {id:"R5", label:"J77", casa:"2E", fora:"2I", data:"30/06", sede:"Dallas"},
-  {id:"R6", label:"J78", casa:"1I", fora:"3CDFGH", data:"30/06", sede:"Nova York/NJ"},
-  {id:"R7", label:"J79", casa:"1G", fora:"3AEHIJ", data:"01/07", sede:"Seattle"},
-  {id:"R8", label:"J80", casa:"1D", fora:"3BEFIJ", data:"02/07", sede:"São Francisco"},
-  {id:"R9", label:"J81", casa:"1H", fora:"2J", data:"02/07", sede:"Los Angeles"},
-  {id:"R10",label:"J82", casa:"2K", fora:"2L", data:"02/07", sede:"Toronto"},
-  {id:"R11",label:"J83", casa:"1A", fora:"3CEFHI", data:"02/07", sede:"Cidade do México"},
-  {id:"R12",label:"J84", casa:"1B", fora:"3DEGKL", data:"03/07", sede:"Vancouver"},
-  {id:"R13",label:"J85", casa:"1K", fora:"2H", data:"01/07", sede:"Dallas"},
-  {id:"R14",label:"J86", casa:"1J", fora:"2G", data:"01/07", sede:"Kansas City"},
-  {id:"R15",label:"J87", casa:"1L", fora:"3ABIJK", data:"03/07", sede:"Miami"},
-  {id:"R16",label:"J88", casa:"2D", fora:"3CEGJL", data:"03/07", sede:"Guadalajara"},
+  {id:"R1",  label:"J73", casa:"2A", fora:"2B",      data:"28/06", sede:"Los Angeles"},
+  {id:"R2",  label:"J74", casa:"1E", fora:"3ABCDF",  data:"29/06", sede:"Boston"},
+  {id:"R3",  label:"J75", casa:"1F", fora:"2C",      data:"30/06", sede:"Monterrey"},
+  {id:"R4",  label:"J76", casa:"1C", fora:"2F",      data:"29/06", sede:"Houston"},
+  {id:"R5",  label:"J77", casa:"1I", fora:"3CDFGH",  data:"30/06", sede:"Nova York/NJ"},
+  {id:"R6",  label:"J78", casa:"2E", fora:"2I",      data:"30/06", sede:"Dallas"},
+  {id:"R7",  label:"J79", casa:"1A", fora:"3CEFHI",  data:"02/07", sede:"Cidade do México"},
+  {id:"R8",  label:"J80", casa:"1L", fora:"3EHIJK",  data:"01/07", sede:"Atlanta"},
+  {id:"R9",  label:"J81", casa:"1D", fora:"3BEFIJ",  data:"02/07", sede:"São Francisco"},
+  {id:"R10", label:"J82", casa:"1G", fora:"3AEHIJ",  data:"01/07", sede:"Seattle"},
+  {id:"R11", label:"J83", casa:"2K", fora:"2L",      data:"02/07", sede:"Toronto"},
+  {id:"R12", label:"J84", casa:"1H", fora:"2J",      data:"02/07", sede:"Los Angeles"},
+  {id:"R13", label:"J85", casa:"1B", fora:"3EFGIJ",  data:"03/07", sede:"Vancouver"},
+  {id:"R14", label:"J86", casa:"1J", fora:"2H",      data:"01/07", sede:"Kansas City"},
+  {id:"R15", label:"J87", casa:"1K", fora:"3DEIJL",  data:"03/07", sede:"Miami"},
+  {id:"R16", label:"J88", casa:"2D", fora:"2G",      data:"03/07", sede:"Guadalajara"},
 ];
 
 const TODOS_TIMES = Object.values(GRUPOS).flat();
@@ -241,16 +244,54 @@ function buildResMesclado() {
 }
 
 // Resolve "3ABCDF" etc. → time real baseado nos 8 melhores terceiros
-function resolverTerceiro(pool, res) {
-  const grupos = pool.replace("3","").split("");
-  const melhores = getMelhoresTerceiros(res).slice(0,8);
-  const terceirosDoPool = melhores.filter(t => grupos.includes(t.grupo));
-  if (terceirosDoPool.length === 0) return null;
-  return terceirosDoPool[0].t;
+// Resolve todos os slots dos 32-avos de uma vez, garantindo que
+// cada terceiro classificado apareça em apenas UM confronto
+function resolverTodosSlots(res) {
+  const melhores8 = getMelhoresTerceiros(res).slice(0,8);
+  const grupos8 = melhores8.map(t => t.grupo); // ex: ["A","C","D","E","F","G","H","I"]
+
+  // Para cada confronto que envolve 3º, descobre qual dos 8 melhores terceiros
+  // pertence ao pool daquele confronto e ainda não foi alocado
+  const alocados = new Set();
+  const resultado = {};
+
+  // Primeiro resolve os slots fixos (1o e 2o colocados) — sem conflito
+  CRUZAMENTOS_FIXOS.forEach(cr => {
+    for (const slot of [cr.casa, cr.fora]) {
+      if (!slot.startsWith("3")) {
+        const pos = parseInt(slot[0])-1;
+        const grupo = slot[1];
+        const cl = calcClassificacao(grupo, res);
+        resultado[`${cr.id}_${slot}`] = cl[pos]?.t || null;
+      }
+    }
+  });
+
+  // Depois resolve os slots de terceiros, em ordem de prioridade do confronto
+  CRUZAMENTOS_FIXOS.forEach(cr => {
+    for (const slot of [cr.casa, cr.fora]) {
+      if (slot.startsWith("3")) {
+        const grupos = slot.replace("3","").split("");
+        // Pega o melhor 3º que está no pool E ainda não foi alocado
+        const candidato = melhores8.find(t =>
+          grupos.includes(t.grupo) && !alocados.has(t.grupo)
+        );
+        if (candidato) {
+          resultado[`${cr.id}_${slot}`] = candidato.t;
+          alocados.add(candidato.grupo);
+        } else {
+          resultado[`${cr.id}_${slot}`] = null;
+        }
+      }
+    }
+  });
+
+  return resultado;
 }
 
-function resolverSlot(slot, res) {
-  if (slot.startsWith("3")) return resolverTerceiro(slot, res);
+function resolverSlot(slot, res, slotsResolvidos, crId) {
+  if (slotsResolvidos) return slotsResolvidos[`${crId}_${slot}`] || null;
+  if (slot.startsWith("3")) return null;
   const pos = parseInt(slot[0])-1;
   const grupo = slot[1];
   const cl = calcClassificacao(grupo, res);
@@ -706,9 +747,12 @@ function renderElim(cont){
     box.style.cssText="background:#080f1a;border:1px solid #1e3a5f;border-radius:12px;padding:14px;margin-bottom:14px";
     box.innerHTML=`<div style="font-weight:800;color:#93c5fd;font-size:.78rem;margin-bottom:4px;letter-spacing:1px">32-AVOS DE FINAL — CRUZAMENTOS OFICIAIS FIFA</div><div style="font-size:.68rem;color:#3a5a7a;margin-bottom:12px">Simulado com base nos seus palpites · Atualiza conforme resultados reais</div>`;
 
+    // Resolve todos os slots de uma vez para evitar times repetidos
+    const slotsResolvidos = resolverTodosSlots(rm);
+
     CRUZAMENTOS_FIXOS.forEach(cr=>{
-      const timeCasa=resolverSlot(cr.casa,rm);
-      const timeFora=resolverSlot(cr.fora,rm);
+      const timeCasa=resolverSlot(cr.casa,rm,slotsResolvidos,cr.id);
+      const timeFora=resolverSlot(cr.fora,rm,slotsResolvidos,cr.id);
       const jogoConfirmado=(elimJogos["32avos"]||[]).find(j=>j.id===cr.id);
       const res=jogoConfirmado?(elimRes[jogoConfirmado.id]||null):null;
 
