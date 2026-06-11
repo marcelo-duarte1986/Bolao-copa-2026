@@ -2,27 +2,26 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Bolão Copa 2026</title>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDaKHvfjU-DBx1EIMnEZKP-FAABiHBLaaQ",
-  authDomain: "bolao-copa-2026-9203d.firebaseapp.com",
-  projectId: "bolao-copa-2026-9203d",
-  storageBucket: "bolao-copa-2026-9203d.firebasestorage.app",
-  messagingSenderId: "388957782276",
-  appId: "1:388957782276:web:8fcb65303c66b175215051"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const fb = initializeApp({
+  apiKey:"AIzaSyDaKHvfjU-DBx1EIMnEZKP-FAABiHBLaaQ",
+  authDomain:"bolao-copa-2026-9203d.firebaseapp.com",
+  projectId:"bolao-copa-2026-9203d",
+  storageBucket:"bolao-copa-2026-9203d.firebasestorage.app",
+  messagingSenderId:"388957782276",
+  appId:"1:388957782276:web:8fcb65303c66b175215051"
+});
+const db = getFirestore(fb);
 
-// ═══════════════════════════════════════
+// ══════════════════════════════════════════════
 // DADOS
-// ═══════════════════════════════════════
-const GRUPOS = {
+// ══════════════════════════════════════════════
+const GR = {
   A:["México","África do Sul","Coreia do Sul","Rep. Tcheca"],
   B:["Canadá","Bósnia-Herzegovina","Catar","Suíça"],
   C:["Brasil","Marrocos","Escócia","Haiti"],
@@ -36,225 +35,108 @@ const GRUPOS = {
   K:["Portugal","RD Congo","Uzbequistão","Colômbia"],
   L:["Inglaterra","Croácia","Gana","Panamá"]
 };
-const BF = t => ({"México":"🇲🇽","África do Sul":"🇿🇦","Coreia do Sul":"🇰🇷","Rep. Tcheca":"🇨🇿","Canadá":"🇨🇦","Bósnia-Herzegovina":"🇧🇦","Catar":"🇶🇦","Suíça":"🇨🇭","Brasil":"🇧🇷","Marrocos":"🇲🇦","Escócia":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Haiti":"🇭🇹","Estados Unidos":"🇺🇸","Paraguai":"🇵🇾","Austrália":"🇦🇺","Turquia":"🇹🇷","Alemanha":"🇩🇪","Costa do Marfim":"🇨🇮","Equador":"🇪🇨","Curaçao":"🇨🇼","Países Baixos":"🇳🇱","Japão":"🇯🇵","Suécia":"🇸🇪","Tunísia":"🇹🇳","Bélgica":"🇧🇪","Egito":"🇪🇬","Irã":"🇮🇷","Nova Zelândia":"🇳🇿","Espanha":"🇪🇸","Arábia Saudita":"🇸🇦","Uruguai":"🇺🇾","Cabo Verde":"🇨🇻","França":"🇫🇷","Senegal":"🇸🇳","Iraque":"🇮🇶","Noruega":"🇳🇴","Argentina":"🇦🇷","Argélia":"🇩🇿","Áustria":"🇦🇹","Jordânia":"🇯🇴","Portugal":"🇵🇹","RD Congo":"🇨🇩","Uzbequistão":"🇺🇿","Colômbia":"🇨🇴","Inglaterra":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croácia":"🇭🇷","Gana":"🇬🇭","Panamá":"🇵🇦"}[t]||"🏳️");
+const BF = t=>({"México":"🇲🇽","África do Sul":"🇿🇦","Coreia do Sul":"🇰🇷","Rep. Tcheca":"🇨🇿","Canadá":"🇨🇦","Bósnia-Herzegovina":"🇧🇦","Catar":"🇶🇦","Suíça":"🇨🇭","Brasil":"🇧🇷","Marrocos":"🇲🇦","Escócia":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Haiti":"🇭🇹","Estados Unidos":"🇺🇸","Paraguai":"🇵🇾","Austrália":"🇦🇺","Turquia":"🇹🇷","Alemanha":"🇩🇪","Costa do Marfim":"🇨🇮","Equador":"🇪🇨","Curaçao":"🇨🇼","Países Baixos":"🇳🇱","Japão":"🇯🇵","Suécia":"🇸🇪","Tunísia":"🇹🇳","Bélgica":"🇧🇪","Egito":"🇪🇬","Irã":"🇮🇷","Nova Zelândia":"🇳🇿","Espanha":"🇪🇸","Arábia Saudita":"🇸🇦","Uruguai":"🇺🇾","Cabo Verde":"🇨🇻","França":"🇫🇷","Senegal":"🇸🇳","Iraque":"🇮🇶","Noruega":"🇳🇴","Argentina":"🇦🇷","Argélia":"🇩🇿","Áustria":"🇦🇹","Jordânia":"🇯🇴","Portugal":"🇵🇹","RD Congo":"🇨🇩","Uzbequistão":"🇺🇿","Colômbia":"🇨🇴","Inglaterra":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croácia":"🇭🇷","Gana":"🇬🇭","Panamá":"🇵🇦"}[t]||"🏳️");
 
+// Jogos com data/hora reais (horário de Brasília) para travamento automático
 const JOGOS = [
-  {id:1,g:"A",d:"11/06",h:"16h",c:"México",f:"África do Sul",s:"Cidade do México"},
-  {id:2,g:"A",d:"11/06",h:"23h",c:"Coreia do Sul",f:"Rep. Tcheca",s:"Guadalajara"},
-  {id:3,g:"A",d:"18/06",h:"13h",c:"Rep. Tcheca",f:"África do Sul",s:"Atlanta"},
-  {id:4,g:"A",d:"18/06",h:"22h",c:"México",f:"Coreia do Sul",s:"Guadalajara"},
-  {id:5,g:"A",d:"24/06",h:"22h",c:"Rep. Tcheca",f:"México",s:"Cidade do México"},
-  {id:6,g:"A",d:"24/06",h:"22h",c:"África do Sul",f:"Coreia do Sul",s:"Monterrey"},
-  {id:7,g:"B",d:"12/06",h:"16h",c:"Canadá",f:"Bósnia-Herzegovina",s:"Toronto"},
-  {id:8,g:"B",d:"13/06",h:"16h",c:"Catar",f:"Suíça",s:"São Francisco"},
-  {id:9,g:"B",d:"18/06",h:"16h",c:"Suíça",f:"Bósnia-Herzegovina",s:"Los Angeles"},
-  {id:10,g:"B",d:"18/06",h:"19h",c:"Canadá",f:"Catar",s:"Vancouver"},
-  {id:11,g:"B",d:"24/06",h:"16h",c:"Suíça",f:"Canadá",s:"Vancouver"},
-  {id:12,g:"B",d:"24/06",h:"16h",c:"Bósnia-Herzegovina",f:"Catar",s:"Seattle"},
-  {id:13,g:"C",d:"13/06",h:"19h",c:"Brasil",f:"Marrocos",s:"Nova York/NJ"},
-  {id:14,g:"C",d:"13/06",h:"22h",c:"Haiti",f:"Escócia",s:"Boston"},
-  {id:15,g:"C",d:"19/06",h:"19h",c:"Escócia",f:"Marrocos",s:"Boston"},
-  {id:16,g:"C",d:"19/06",h:"22h",c:"Brasil",f:"Haiti",s:"Filadélfia"},
-  {id:17,g:"C",d:"24/06",h:"19h",c:"Escócia",f:"Brasil",s:"Miami"},
-  {id:18,g:"C",d:"24/06",h:"19h",c:"Marrocos",f:"Haiti",s:"Atlanta"},
-  {id:19,g:"D",d:"12/06",h:"22h",c:"Estados Unidos",f:"Paraguai",s:"Los Angeles"},
-  {id:20,g:"D",d:"13/06",h:"01h",c:"Austrália",f:"Turquia",s:"Vancouver"},
-  {id:21,g:"D",d:"19/06",h:"01h",c:"Turquia",f:"Paraguai",s:"São Francisco"},
-  {id:22,g:"D",d:"19/06",h:"16h",c:"Estados Unidos",f:"Austrália",s:"Seattle"},
-  {id:23,g:"D",d:"25/06",h:"23h",c:"Turquia",f:"Estados Unidos",s:"Los Angeles"},
-  {id:24,g:"D",d:"25/06",h:"23h",c:"Paraguai",f:"Austrália",s:"São Francisco"},
-  {id:25,g:"E",d:"14/06",h:"14h",c:"Alemanha",f:"Curaçao",s:"Houston"},
-  {id:26,g:"E",d:"14/06",h:"20h",c:"Costa do Marfim",f:"Equador",s:"Filadélfia"},
-  {id:27,g:"E",d:"20/06",h:"17h",c:"Alemanha",f:"Costa do Marfim",s:"Toronto"},
-  {id:28,g:"E",d:"20/06",h:"21h",c:"Equador",f:"Curaçao",s:"Kansas City"},
-  {id:29,g:"E",d:"25/06",h:"17h",c:"Curaçao",f:"Costa do Marfim",s:"Filadélfia"},
-  {id:30,g:"E",d:"25/06",h:"17h",c:"Equador",f:"Alemanha",s:"Nova York"},
-  {id:31,g:"F",d:"14/06",h:"17h",c:"Países Baixos",f:"Japão",s:"Dallas"},
-  {id:32,g:"F",d:"14/06",h:"23h",c:"Suécia",f:"Tunísia",s:"Monterrey"},
-  {id:33,g:"F",d:"20/06",h:"01h",c:"Tunísia",f:"Japão",s:"Monterrey"},
-  {id:34,g:"F",d:"20/06",h:"14h",c:"Países Baixos",f:"Suécia",s:"Houston"},
-  {id:35,g:"F",d:"25/06",h:"20h",c:"Japão",f:"Suécia",s:"Dallas"},
-  {id:36,g:"F",d:"25/06",h:"20h",c:"Tunísia",f:"Países Baixos",s:"Kansas City"},
-  {id:37,g:"G",d:"15/06",h:"16h",c:"Bélgica",f:"Egito",s:"Seattle"},
-  {id:38,g:"G",d:"15/06",h:"22h",c:"Irã",f:"Nova Zelândia",s:"Los Angeles"},
-  {id:39,g:"G",d:"21/06",h:"16h",c:"Bélgica",f:"Irã",s:"Los Angeles"},
-  {id:40,g:"G",d:"21/06",h:"22h",c:"Nova Zelândia",f:"Egito",s:"Vancouver"},
-  {id:41,g:"G",d:"27/06",h:"00h",c:"Egito",f:"Irã",s:"Seattle"},
-  {id:42,g:"G",d:"27/06",h:"00h",c:"Nova Zelândia",f:"Bélgica",s:"Vancouver"},
-  {id:43,g:"H",d:"15/06",h:"13h",c:"Espanha",f:"Cabo Verde",s:"Atlanta"},
-  {id:44,g:"H",d:"15/06",h:"19h",c:"Arábia Saudita",f:"Uruguai",s:"Miami"},
-  {id:45,g:"H",d:"21/06",h:"13h",c:"Espanha",f:"Arábia Saudita",s:"Atlanta"},
-  {id:46,g:"H",d:"21/06",h:"19h",c:"Uruguai",f:"Cabo Verde",s:"Miami"},
-  {id:47,g:"H",d:"26/06",h:"21h",c:"Cabo Verde",f:"Arábia Saudita",s:"Houston"},
-  {id:48,g:"H",d:"26/06",h:"21h",c:"Uruguai",f:"Espanha",s:"Guadalajara"},
-  {id:49,g:"I",d:"16/06",h:"16h",c:"França",f:"Senegal",s:"Nova York"},
-  {id:50,g:"I",d:"16/06",h:"19h",c:"Iraque",f:"Noruega",s:"Boston"},
-  {id:51,g:"I",d:"22/06",h:"18h",c:"França",f:"Iraque",s:"Filadélfia"},
-  {id:52,g:"I",d:"22/06",h:"21h",c:"Noruega",f:"Senegal",s:"Nova York"},
-  {id:53,g:"I",d:"26/06",h:"16h",c:"Noruega",f:"França",s:"Boston"},
-  {id:54,g:"I",d:"26/06",h:"16h",c:"Senegal",f:"Iraque",s:"Toronto"},
-  {id:55,g:"J",d:"16/06",h:"01h",c:"Áustria",f:"Jordânia",s:"São Francisco"},
-  {id:56,g:"J",d:"16/06",h:"22h",c:"Argentina",f:"Argélia",s:"Kansas City"},
-  {id:57,g:"J",d:"22/06",h:"00h",c:"Jordânia",f:"Argélia",s:"São Francisco"},
-  {id:58,g:"J",d:"22/06",h:"14h",c:"Argentina",f:"Áustria",s:"Dallas"},
-  {id:59,g:"J",d:"27/06",h:"23h",c:"Argélia",f:"Áustria",s:"Kansas City"},
-  {id:60,g:"J",d:"27/06",h:"23h",c:"Jordânia",f:"Argentina",s:"Dallas"},
-  {id:61,g:"K",d:"17/06",h:"14h",c:"Portugal",f:"RD Congo",s:"Houston"},
-  {id:62,g:"K",d:"17/06",h:"23h",c:"Uzbequistão",f:"Colômbia",s:"Cidade do México"},
-  {id:63,g:"K",d:"23/06",h:"14h",c:"Portugal",f:"Uzbequistão",s:"Houston"},
-  {id:64,g:"K",d:"23/06",h:"23h",c:"Colômbia",f:"RD Congo",s:"Guadalajara"},
-  {id:65,g:"K",d:"27/06",h:"20h",c:"Colômbia",f:"Portugal",s:"Miami"},
-  {id:66,g:"K",d:"27/06",h:"20h",c:"RD Congo",f:"Uzbequistão",s:"Atlanta"},
-  {id:67,g:"L",d:"17/06",h:"17h",c:"Inglaterra",f:"Croácia",s:"Dallas"},
-  {id:68,g:"L",d:"17/06",h:"20h",c:"Gana",f:"Panamá",s:"Toronto"},
-  {id:69,g:"L",d:"23/06",h:"17h",c:"Inglaterra",f:"Gana",s:"Boston"},
-  {id:70,g:"L",d:"23/06",h:"20h",c:"Panamá",f:"Croácia",s:"Toronto"},
-  {id:71,g:"L",d:"27/06",h:"18h",c:"Panamá",f:"Inglaterra",s:"Nova York"},
-  {id:72,g:"L",d:"27/06",h:"18h",c:"Croácia",f:"Gana",s:"Filadélfia"}
+  {id:1,g:"A",d:"11/06",h:"16h",dt:"2026-06-11T15:00:00",c:"México",f:"África do Sul",s:"Cidade do México"},
+  {id:2,g:"A",d:"11/06",h:"23h",dt:"2026-06-11T22:00:00",c:"Coreia do Sul",f:"Rep. Tcheca",s:"Guadalajara"},
+  {id:3,g:"A",d:"18/06",h:"13h",dt:"2026-06-18T12:00:00",c:"Rep. Tcheca",f:"África do Sul",s:"Atlanta"},
+  {id:4,g:"A",d:"18/06",h:"22h",dt:"2026-06-18T21:00:00",c:"México",f:"Coreia do Sul",s:"Guadalajara"},
+  {id:5,g:"A",d:"24/06",h:"22h",dt:"2026-06-24T21:00:00",c:"Rep. Tcheca",f:"México",s:"Cidade do México"},
+  {id:6,g:"A",d:"24/06",h:"22h",dt:"2026-06-24T21:00:00",c:"África do Sul",f:"Coreia do Sul",s:"Monterrey"},
+  {id:7,g:"B",d:"12/06",h:"16h",dt:"2026-06-12T15:00:00",c:"Canadá",f:"Bósnia-Herzegovina",s:"Toronto"},
+  {id:8,g:"B",d:"13/06",h:"16h",dt:"2026-06-13T15:00:00",c:"Catar",f:"Suíça",s:"São Francisco"},
+  {id:9,g:"B",d:"18/06",h:"16h",dt:"2026-06-18T15:00:00",c:"Suíça",f:"Bósnia-Herzegovina",s:"Los Angeles"},
+  {id:10,g:"B",d:"18/06",h:"19h",dt:"2026-06-18T18:00:00",c:"Canadá",f:"Catar",s:"Vancouver"},
+  {id:11,g:"B",d:"24/06",h:"16h",dt:"2026-06-24T15:00:00",c:"Suíça",f:"Canadá",s:"Vancouver"},
+  {id:12,g:"B",d:"24/06",h:"16h",dt:"2026-06-24T15:00:00",c:"Bósnia-Herzegovina",f:"Catar",s:"Seattle"},
+  {id:13,g:"C",d:"13/06",h:"19h",dt:"2026-06-13T18:00:00",c:"Brasil",f:"Marrocos",s:"Nova York/NJ"},
+  {id:14,g:"C",d:"13/06",h:"22h",dt:"2026-06-13T21:00:00",c:"Haiti",f:"Escócia",s:"Boston"},
+  {id:15,g:"C",d:"19/06",h:"19h",dt:"2026-06-19T18:00:00",c:"Escócia",f:"Marrocos",s:"Boston"},
+  {id:16,g:"C",d:"19/06",h:"22h",dt:"2026-06-19T21:00:00",c:"Brasil",f:"Haiti",s:"Filadélfia"},
+  {id:17,g:"C",d:"24/06",h:"19h",dt:"2026-06-24T18:00:00",c:"Escócia",f:"Brasil",s:"Miami"},
+  {id:18,g:"C",d:"24/06",h:"19h",dt:"2026-06-24T18:00:00",c:"Marrocos",f:"Haiti",s:"Atlanta"},
+  {id:19,g:"D",d:"12/06",h:"22h",dt:"2026-06-12T21:00:00",c:"Estados Unidos",f:"Paraguai",s:"Los Angeles"},
+  {id:20,g:"D",d:"13/06",h:"01h",dt:"2026-06-13T00:00:00",c:"Austrália",f:"Turquia",s:"Vancouver"},
+  {id:21,g:"D",d:"19/06",h:"01h",dt:"2026-06-19T00:00:00",c:"Turquia",f:"Paraguai",s:"São Francisco"},
+  {id:22,g:"D",d:"19/06",h:"16h",dt:"2026-06-19T15:00:00",c:"Estados Unidos",f:"Austrália",s:"Seattle"},
+  {id:23,g:"D",d:"25/06",h:"23h",dt:"2026-06-25T22:00:00",c:"Turquia",f:"Estados Unidos",s:"Los Angeles"},
+  {id:24,g:"D",d:"25/06",h:"23h",dt:"2026-06-25T22:00:00",c:"Paraguai",f:"Austrália",s:"São Francisco"},
+  {id:25,g:"E",d:"14/06",h:"14h",dt:"2026-06-14T13:00:00",c:"Alemanha",f:"Curaçao",s:"Houston"},
+  {id:26,g:"E",d:"14/06",h:"20h",dt:"2026-06-14T19:00:00",c:"Costa do Marfim",f:"Equador",s:"Filadélfia"},
+  {id:27,g:"E",d:"20/06",h:"17h",dt:"2026-06-20T16:00:00",c:"Alemanha",f:"Costa do Marfim",s:"Toronto"},
+  {id:28,g:"E",d:"20/06",h:"21h",dt:"2026-06-20T20:00:00",c:"Equador",f:"Curaçao",s:"Kansas City"},
+  {id:29,g:"E",d:"25/06",h:"17h",dt:"2026-06-25T16:00:00",c:"Curaçao",f:"Costa do Marfim",s:"Filadélfia"},
+  {id:30,g:"E",d:"25/06",h:"17h",dt:"2026-06-25T16:00:00",c:"Equador",f:"Alemanha",s:"Nova York"},
+  {id:31,g:"F",d:"14/06",h:"17h",dt:"2026-06-14T16:00:00",c:"Países Baixos",f:"Japão",s:"Dallas"},
+  {id:32,g:"F",d:"14/06",h:"23h",dt:"2026-06-14T22:00:00",c:"Suécia",f:"Tunísia",s:"Monterrey"},
+  {id:33,g:"F",d:"20/06",h:"01h",dt:"2026-06-20T00:00:00",c:"Tunísia",f:"Japão",s:"Monterrey"},
+  {id:34,g:"F",d:"20/06",h:"14h",dt:"2026-06-20T13:00:00",c:"Países Baixos",f:"Suécia",s:"Houston"},
+  {id:35,g:"F",d:"25/06",h:"20h",dt:"2026-06-25T19:00:00",c:"Japão",f:"Suécia",s:"Dallas"},
+  {id:36,g:"F",d:"25/06",h:"20h",dt:"2026-06-25T19:00:00",c:"Tunísia",f:"Países Baixos",s:"Kansas City"},
+  {id:37,g:"G",d:"15/06",h:"16h",dt:"2026-06-15T15:00:00",c:"Bélgica",f:"Egito",s:"Seattle"},
+  {id:38,g:"G",d:"15/06",h:"22h",dt:"2026-06-15T21:00:00",c:"Irã",f:"Nova Zelândia",s:"Los Angeles"},
+  {id:39,g:"G",d:"21/06",h:"16h",dt:"2026-06-21T15:00:00",c:"Bélgica",f:"Irã",s:"Los Angeles"},
+  {id:40,g:"G",d:"21/06",h:"22h",dt:"2026-06-21T21:00:00",c:"Nova Zelândia",f:"Egito",s:"Vancouver"},
+  {id:41,g:"G",d:"27/06",h:"00h",dt:"2026-06-26T23:00:00",c:"Egito",f:"Irã",s:"Seattle"},
+  {id:42,g:"G",d:"27/06",h:"00h",dt:"2026-06-26T23:00:00",c:"Nova Zelândia",f:"Bélgica",s:"Vancouver"},
+  {id:43,g:"H",d:"15/06",h:"13h",dt:"2026-06-15T12:00:00",c:"Espanha",f:"Cabo Verde",s:"Atlanta"},
+  {id:44,g:"H",d:"15/06",h:"19h",dt:"2026-06-15T18:00:00",c:"Arábia Saudita",f:"Uruguai",s:"Miami"},
+  {id:45,g:"H",d:"21/06",h:"13h",dt:"2026-06-21T12:00:00",c:"Espanha",f:"Arábia Saudita",s:"Atlanta"},
+  {id:46,g:"H",d:"21/06",h:"19h",dt:"2026-06-21T18:00:00",c:"Uruguai",f:"Cabo Verde",s:"Miami"},
+  {id:47,g:"H",d:"26/06",h:"21h",dt:"2026-06-26T20:00:00",c:"Cabo Verde",f:"Arábia Saudita",s:"Houston"},
+  {id:48,g:"H",d:"26/06",h:"21h",dt:"2026-06-26T20:00:00",c:"Uruguai",f:"Espanha",s:"Guadalajara"},
+  {id:49,g:"I",d:"16/06",h:"16h",dt:"2026-06-16T15:00:00",c:"França",f:"Senegal",s:"Nova York"},
+  {id:50,g:"I",d:"16/06",h:"19h",dt:"2026-06-16T18:00:00",c:"Iraque",f:"Noruega",s:"Boston"},
+  {id:51,g:"I",d:"22/06",h:"18h",dt:"2026-06-22T17:00:00",c:"França",f:"Iraque",s:"Filadélfia"},
+  {id:52,g:"I",d:"22/06",h:"21h",dt:"2026-06-22T20:00:00",c:"Noruega",f:"Senegal",s:"Nova York"},
+  {id:53,g:"I",d:"26/06",h:"16h",dt:"2026-06-26T15:00:00",c:"Noruega",f:"França",s:"Boston"},
+  {id:54,g:"I",d:"26/06",h:"16h",dt:"2026-06-26T15:00:00",c:"Senegal",f:"Iraque",s:"Toronto"},
+  {id:55,g:"J",d:"16/06",h:"01h",dt:"2026-06-16T00:00:00",c:"Áustria",f:"Jordânia",s:"São Francisco"},
+  {id:56,g:"J",d:"16/06",h:"22h",dt:"2026-06-16T21:00:00",c:"Argentina",f:"Argélia",s:"Kansas City"},
+  {id:57,g:"J",d:"22/06",h:"00h",dt:"2026-06-21T23:00:00",c:"Jordânia",f:"Argélia",s:"São Francisco"},
+  {id:58,g:"J",d:"22/06",h:"14h",dt:"2026-06-22T13:00:00",c:"Argentina",f:"Áustria",s:"Dallas"},
+  {id:59,g:"J",d:"27/06",h:"23h",dt:"2026-06-27T22:00:00",c:"Argélia",f:"Áustria",s:"Kansas City"},
+  {id:60,g:"J",d:"27/06",h:"23h",dt:"2026-06-27T22:00:00",c:"Jordânia",f:"Argentina",s:"Dallas"},
+  {id:61,g:"K",d:"17/06",h:"14h",dt:"2026-06-17T13:00:00",c:"Portugal",f:"RD Congo",s:"Houston"},
+  {id:62,g:"K",d:"17/06",h:"23h",dt:"2026-06-17T22:00:00",c:"Uzbequistão",f:"Colômbia",s:"Cidade do México"},
+  {id:63,g:"K",d:"23/06",h:"14h",dt:"2026-06-23T13:00:00",c:"Portugal",f:"Uzbequistão",s:"Houston"},
+  {id:64,g:"K",d:"23/06",h:"23h",dt:"2026-06-23T22:00:00",c:"Colômbia",f:"RD Congo",s:"Guadalajara"},
+  {id:65,g:"K",d:"27/06",h:"20h",dt:"2026-06-27T19:00:00",c:"Colômbia",f:"Portugal",s:"Miami"},
+  {id:66,g:"K",d:"27/06",h:"20h",dt:"2026-06-27T19:00:00",c:"RD Congo",f:"Uzbequistão",s:"Atlanta"},
+  {id:67,g:"L",d:"17/06",h:"17h",dt:"2026-06-17T16:00:00",c:"Inglaterra",f:"Croácia",s:"Dallas"},
+  {id:68,g:"L",d:"17/06",h:"20h",dt:"2026-06-17T19:00:00",c:"Gana",f:"Panamá",s:"Toronto"},
+  {id:69,g:"L",d:"23/06",h:"17h",dt:"2026-06-23T16:00:00",c:"Inglaterra",f:"Gana",s:"Boston"},
+  {id:70,g:"L",d:"23/06",h:"20h",dt:"2026-06-23T19:00:00",c:"Panamá",f:"Croácia",s:"Toronto"},
+  {id:71,g:"L",d:"27/06",h:"18h",dt:"2026-06-27T17:00:00",c:"Panamá",f:"Inglaterra",s:"Nova York"},
+  {id:72,g:"L",d:"27/06",h:"18h",dt:"2026-06-27T17:00:00",c:"Croácia",f:"Gana",s:"Filadélfia"}
 ];
 
-// Cruzamentos 32-avos — fonte oficial FOX Sports / FIFA
-// Formato: [1o_grupo, 2o_grupo, posição_terceiro_pool]
-// 6 jogos são 2o×2o, 10 jogos são 1o×3o
-// Cruzamentos oficiais FIFA — fonte: Wikipedia / regulamento Copa 2026
-// Para terceiros: o pool indica quais grupos podem fornecer o 3º
-// A matriz de 495 combinações define qual 3º específico vai para qual jogo
-const CRUZAMENTOS_FIXOS = [
-  {id:"R1",  label:"J73", casa:"2A", fora:"2B",      data:"28/06", sede:"Los Angeles"},
-  {id:"R2",  label:"J74", casa:"1E", fora:"3ABCDF",  data:"29/06", sede:"Boston"},
-  {id:"R3",  label:"J75", casa:"1F", fora:"2C",      data:"30/06", sede:"Monterrey"},
-  {id:"R4",  label:"J76", casa:"1C", fora:"2F",      data:"29/06", sede:"Houston"},
-  {id:"R5",  label:"J77", casa:"1I", fora:"3CDFGH",  data:"30/06", sede:"Nova York/NJ"},
-  {id:"R6",  label:"J78", casa:"2E", fora:"2I",      data:"30/06", sede:"Dallas"},
-  {id:"R7",  label:"J79", casa:"1A", fora:"3CEFHI",  data:"02/07", sede:"Cidade do México"},
-  {id:"R8",  label:"J80", casa:"1L", fora:"3EHIJK",  data:"01/07", sede:"Atlanta"},
-  {id:"R9",  label:"J81", casa:"1D", fora:"3BEFIJ",  data:"02/07", sede:"São Francisco"},
-  {id:"R10", label:"J82", casa:"1G", fora:"3AEHIJ",  data:"01/07", sede:"Seattle"},
-  {id:"R11", label:"J83", casa:"2K", fora:"2L",      data:"02/07", sede:"Toronto"},
-  {id:"R12", label:"J84", casa:"1H", fora:"2J",      data:"02/07", sede:"Los Angeles"},
-  {id:"R13", label:"J85", casa:"1B", fora:"3EFGIJ",  data:"03/07", sede:"Vancouver"},
-  {id:"R14", label:"J86", casa:"1J", fora:"2H",      data:"01/07", sede:"Kansas City"},
-  {id:"R15", label:"J87", casa:"1K", fora:"3DEIJL",  data:"03/07", sede:"Miami"},
-  {id:"R16", label:"J88", casa:"2D", fora:"2G",      data:"03/07", sede:"Guadalajara"},
+// Cruzamentos oficiais FIFA — 32-avos
+// slots de 3º serão resolvidos apenas quando os 8 melhores terceiros estiverem definidos
+const CR32 = [
+  {id:"R1", lb:"J73",c:"2A",f:"2B",      dt:"28/06",s:"Los Angeles"},
+  {id:"R2", lb:"J74",c:"1E",f:"3ABCDF",  dt:"29/06",s:"Boston"},
+  {id:"R3", lb:"J75",c:"1F",f:"2C",      dt:"30/06",s:"Monterrey"},
+  {id:"R4", lb:"J76",c:"1C",f:"2F",      dt:"29/06",s:"Houston"},
+  {id:"R5", lb:"J77",c:"1I",f:"3CDFGH",  dt:"30/06",s:"Nova York/NJ"},
+  {id:"R6", lb:"J78",c:"2E",f:"2I",      dt:"30/06",s:"Dallas"},
+  {id:"R7", lb:"J79",c:"1A",f:"3CEFHI",  dt:"02/07",s:"Cidade do México"},
+  {id:"R8", lb:"J80",c:"1L",f:"3EHIJK",  dt:"01/07",s:"Atlanta"},
+  {id:"R9", lb:"J81",c:"1D",f:"3BEFIJ",  dt:"02/07",s:"São Francisco"},
+  {id:"R10",lb:"J82",c:"1G",f:"3AEHIJ",  dt:"01/07",s:"Seattle"},
+  {id:"R11",lb:"J83",c:"2K",f:"2L",      dt:"02/07",s:"Toronto"},
+  {id:"R12",lb:"J84",c:"1H",f:"2J",      dt:"02/07",s:"Los Angeles"},
+  {id:"R13",lb:"J85",c:"1B",f:"3EFGIJ",  dt:"03/07",s:"Vancouver"},
+  {id:"R14",lb:"J86",c:"1J",f:"2H",      dt:"01/07",s:"Kansas City"},
+  {id:"R15",lb:"J87",c:"1K",f:"3DEIJL",  dt:"03/07",s:"Miami"},
+  {id:"R16",lb:"J88",c:"2D",f:"2G",      dt:"03/07",s:"Guadalajara"},
 ];
 
-const TODOS_TIMES = Object.values(GRUPOS).flat();
-const SENHA_ADMIN = "copa2026";
-
-// ═══════════════════════════════════════
-// CLASSIFICAÇÃO DO GRUPO — critérios oficiais FIFA 2026
-// 1) Pts confronto direto  2) SG confronto direto  3) GF confronto direto
-// 4) SG geral  5) GF geral  6) Fair play (não implementado — empate raro)
-// 7) Ranking FIFA (não implementado — usado só em sorteio)
-// ═══════════════════════════════════════
-function calcStatsGrupo(grupo, resultados) {
-  const times = GRUPOS[grupo];
-  const stats = {};
-  times.forEach(t => stats[t] = {t, pts:0, j:0, v:0, e:0, d:0, gf:0, gc:0, sg:0});
-  JOGOS.filter(j => j.g === grupo).forEach(j => {
-    const r = resultados[j.id];
-    if (!r || r.c == null || r.f == null) return;
-    const ca = stats[j.c], fo = stats[j.f];
-    ca.j++; fo.j++;
-    ca.gf += r.c; ca.gc += r.f;
-    fo.gf += r.f; fo.gc += r.c;
-    ca.sg = ca.gf - ca.gc; fo.sg = fo.gf - fo.gc;
-    if (r.c > r.f)      { ca.pts+=3; ca.v++; fo.d++; }
-    else if (r.c < r.f) { fo.pts+=3; fo.v++; ca.d++; }
-    else                { ca.pts+=1; fo.pts+=1; ca.e++; fo.e++; }
-  });
-  return stats;
-}
-
-// Stats apenas nos confrontos diretos entre um subconjunto de times
-function calcH2H(times, grupo, resultados) {
-  const h = {};
-  times.forEach(t => h[t] = {pts:0, sg:0, gf:0});
-  JOGOS.filter(j => j.g === grupo && times.includes(j.c) && times.includes(j.f)).forEach(j => {
-    const r = resultados[j.id];
-    if (!r || r.c == null || r.f == null) return;
-    h[j.c].gf += r.c; h[j.c].sg += r.c - r.f;
-    h[j.f].gf += r.f; h[j.f].sg += r.f - r.c;
-    if (r.c > r.f)      { h[j.c].pts+=3; }
-    else if (r.c < r.f) { h[j.f].pts+=3; }
-    else                { h[j.c].pts+=1; h[j.f].pts+=1; }
-  });
-  return h;
-}
-
-function calcClassificacao(grupo, resultados) {
-  const statsMap = calcStatsGrupo(grupo, resultados);
-  const arr = Object.values(statsMap);
-
-  // Comparador completo com critérios FIFA 2026
-  function cmp(a, b, subset) {
-    if (b.pts !== a.pts) return b.pts - a.pts;
-    // Critérios H2H (só faz sentido se tivermos subconjunto)
-    if (subset && subset.length >= 2) {
-      const h = calcH2H(subset.map(x=>x.t), grupo, resultados);
-      const ha = h[a.t], hb = h[b.t];
-      if (hb.pts !== ha.pts) return hb.pts - ha.pts;
-      if (hb.sg  !== ha.sg)  return hb.sg  - ha.sg;
-      if (hb.gf  !== ha.gf)  return hb.gf  - ha.gf;
-    }
-    // Critérios gerais
-    if (b.sg !== a.sg) return b.sg - a.sg;
-    if (b.gf !== a.gf) return b.gf - a.gf;
-    return 0;
-  }
-
-  // Ordena com critérios H2H aplicados apenas entre times empatados em pts
-  arr.sort((a, b) => {
-    if (b.pts !== a.pts) return b.pts - a.pts;
-    // Agrupa times com mesmo pts para calcular H2H
-    const grupo_pts = arr.filter(x => x.pts === a.pts);
-    return cmp(a, b, grupo_pts);
-  });
-
-  return arr;
-}
-
-// Encontra os 8 melhores terceiros — critérios FIFA: Pts, SG, GF
-function getMelhoresTerceiros(res) {
-  const terceiros = [];
-  Object.keys(GRUPOS).forEach(g => {
-    const cl = calcClassificacao(g, res);
-    if (cl[2] && cl[2].j > 0) terceiros.push({...cl[2], grupo:g});
-  });
-  return terceiros.sort((a,b) => {
-    if (b.pts !== a.pts) return b.pts - a.pts;
-    if (b.sg  !== a.sg)  return b.sg  - a.sg;
-    if (b.gf  !== a.gf)  return b.gf  - a.gf;
-    return 0;
-  });
-}
-
-// Constrói resultados mesclados (palpites + reais) para TODOS os grupos
-function buildResMesclado() {
-  const rm = {};
-  JOGOS.forEach(j => {
-    if (resultados[j.id] != null) {
-      rm[j.id] = resultados[j.id];
-    } else {
-      const p = (pals.grupo||{})[j.id];
-      if (p && p.c != null && p.f != null) rm[j.id] = {c:p.c, f:p.f};
-    }
-  });
-  return rm;
-}
-
-// Resolve "3ABCDF" etc. → time real baseado nos 8 melhores terceiros
-// ═══════════════════════════════════════════════════════════
-// MATRIZ FIFA — 495 combinações (Annex C do regulamento 2026)
-// Chave: 8 letras dos grupos em ordem alfabética (ex: "CDEFGHIJ")
-// Valor: {1A, 1B, 1D, 1E, 1G, 1I, 1K, 1L} → grupo do 3º adversário
-// ═══════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════
-// MATRIZ FIFA — Annex C (todas as 495 combinações relevantes)
-// Chave: 8 grupos em ordem alfabética (ex: "CDEFGHIJ")
-// Valor: [1A_vs, 1B_vs, 1D_vs, 1E_vs, 1G_vs, 1I_vs, 1K_vs, 1L_vs]
-// ═══════════════════════════════════════════════════════════
-const FIFA_MATRIX = {
+// Matriz FIFA Annex C — apenas as combinações necessárias
+// Chave: 8 grupos ordenados. Valor: [1A,1B,1D,1E,1G,1I,1K,1L] = grupo do 3º adversário
+const M495 = {
   "EFGHIJKL":["E","J","I","F","H","G","L","K"],
   "DFGHIJKL":["H","G","I","D","J","F","L","K"],
   "DEGHIJKL":["E","J","I","D","H","G","L","K"],
@@ -281,7 +163,6 @@ const FIFA_MATRIX = {
   "CDFGHIJK":["C","G","J","D","H","F","I","K"],
   "CDEHIJKL":["E","J","I","C","H","D","L","K"],
   "CDEGIJKL":["E","G","I","C","J","D","L","K"],
-  "CDEGJKL": ["E","G","J","C","H","D","L","K"],
   "CDEGHJKL":["E","G","J","C","H","D","L","K"],
   "CDEGHIKL":["E","G","I","C","H","D","L","K"],
   "CDEGHIJL":["E","G","J","C","H","D","L","I"],
@@ -318,10 +199,10 @@ const FIFA_MATRIX = {
   "BDFGHIJK":["H","G","B","D","J","F","I","K"],
   "BDEHIJKL":["E","J","B","D","I","H","L","K"],
   "BDEGIJKL":["E","J","B","D","I","G","L","K"],
-  "BDEGHIJK":["E","J","B","D","H","G","I","K"],
   "BDEGHJKL":["E","J","B","D","H","G","L","K"],
   "BDEGHIKL":["E","G","B","D","I","H","L","K"],
   "BDEGHIJL":["E","J","B","D","H","G","L","I"],
+  "BDEGHIJK":["E","J","B","D","H","G","I","K"],
   "BDEFIJKL":["E","J","B","D","I","F","L","K"],
   "BDEFHJKL":["E","J","B","D","H","F","L","K"],
   "BDEFHIKL":["E","I","B","D","H","F","L","K"],
@@ -337,208 +218,214 @@ const FIFA_MATRIX = {
   "BDEFGHIL":["E","G","B","D","H","F","L","I"],
   "BDEFGHIK":["E","G","B","D","H","F","I","K"],
   "BDEFGHIJ":["H","G","B","D","J","F","E","I"],
-  "BCGHIJKL":["H","J","B","C","I","G","L","K"],
-  "BCFHIJKL":["H","J","B","C","I","F","L","K"],
-  "BCFGIJKL":["I","G","B","C","J","F","L","K"],
-  "BCFGHJKL":["H","G","B","C","J","F","L","K"],
-  "BCFGHIKL":["H","G","B","C","I","F","L","K"],
-  "BCFGHIJL":["H","G","B","C","J","F","L","I"],
-  "BCFGHIJK":["H","G","B","C","J","F","I","K"],
-  "BCEHIJKL":["E","J","B","C","I","H","L","K"],
-  "BCEGHIJK":["E","J","B","C","H","G","I","K"],
-  "BCEGIJKL":["E","J","B","C","I","G","L","K"],
-  "BCEGJKL": ["E","J","B","C","H","G","L","K"],
-  "BCEGHJKL":["E","J","B","C","H","G","L","K"],
-  "BCEGHIKL":["E","G","B","C","I","H","L","K"],
-  "BCEGHIJL":["E","J","B","C","H","G","L","I"],
-  "BCEFIJKL":["E","J","B","C","I","F","L","K"],
-  "BCEFHJKL":["E","J","B","C","H","F","L","K"],
-  "BCEFHIKL":["E","I","B","C","H","F","L","K"],
-  "BCEFHIJL":["E","J","B","C","H","F","L","I"],
-  "BCEFHIJK":["E","J","B","C","H","F","I","K"],
-  "BCEFGJKL":["E","G","B","C","J","F","L","K"],
-  "BCEFGIKL":["E","G","B","C","I","F","L","K"],
-  "BCEFGIJL":["E","G","B","C","J","F","L","I"],
-  "BCEFGIJK":["E","G","B","C","J","F","I","K"],
-  "BCEFGHKL":["E","G","B","C","H","F","L","K"],
-  "BCEFGHJL":["H","G","B","C","J","F","L","E"],
-  "BCEFGHJK":["H","G","B","C","J","F","E","K"],
-  "BCEFGHIL":["E","G","B","C","H","F","L","I"],
-  "BCEFGHIK":["E","G","B","C","H","F","I","K"],
-  "BCEFGHIJ":["H","G","B","C","J","F","E","I"],
-  "BCDHIJKL":["H","J","B","C","I","D","L","K"],
-  "BCDGHIJK":["H","G","B","C","J","D","I","K"],
-  "BCDGIJKL":["I","G","B","C","J","D","L","K"],
-  "BCDGHJKL":["H","G","B","C","J","D","L","K"],
-  "BCDGHIKL":["H","G","B","C","I","D","L","K"],
-  "BCDGHIJL":["H","G","B","C","J","D","L","I"],
-  "BCDFIJKL":["C","J","B","D","I","F","L","K"],
-  "BCDFHJKL":["C","J","B","D","H","F","L","K"],
-  "BCDFHIKL":["C","I","B","D","H","F","L","K"],
-  "BCDFHIJL":["C","J","B","D","H","F","L","I"],
-  "BCDFHIJK":["C","J","B","D","H","F","I","K"],
-  "BCDFGJKL":["C","G","B","D","J","F","L","K"],
-  "BCDFGIKL":["C","G","B","D","I","F","L","K"],
-  "BCDFGIJL":["C","G","B","D","J","F","L","I"],
-  "BCDFGIJK":["C","G","B","D","J","F","I","K"],
-  "BCDFGHKL":["C","G","B","D","H","F","L","K"],
-  "BCDFGHJL":["C","G","B","D","J","F","L","?"],
-  "BCDFGHIJ":["C","G","B","D","J","F","?","?"],
-  "BCDEHIJK":["E","J","B","C","H","D","I","K"],
-  "BCDGHIJK":["H","G","B","C","J","D","I","K"],
 };
 
-// Dado os 8 grupos classificados ordenados, retorna os adversários dos 3os para cada jogo
-function getAlocacaoTerceiros(grupos8Sorted) {
-  const key = grupos8Sorted.join("");
-  const row = FIFA_MATRIX[key];
-  if (!row) return null;
-  // row[i] = grupo do 3º colocado adversário do respectivo 1º colocado
-  // Ordem: [1A_vs, 1B_vs, 1D_vs, 1E_vs, 1G_vs, 1I_vs, 1K_vs, 1L_vs]
-  return {
-    R7:  row[0], // 1A vs 3[row[0]]
-    R13: row[1], // 1B vs 3[row[1]]
-    R9:  row[2], // 1D vs 3[row[2]]
-    R2:  row[3], // 1E vs 3[row[3]]
-    R10: row[4], // 1G vs 3[row[4]]
-    R5:  row[5], // 1I vs 3[row[5]]
-    R15: row[6], // 1K vs 3[row[6]]
-    R8:  row[7], // 1L vs 3[row[7]]
-  };
+// ══════════════════════════════════════════════
+// HORÁRIO — trava 24h antes do jogo
+// ══════════════════════════════════════════════
+function jogoTravado(jogo) {
+  if (!jogo.dt) return false;
+  const agora = new Date();
+  const inicio = new Date(jogo.dt);
+  const prazo = new Date(inicio.getTime() - 24*60*60*1000); // 24h antes
+  return agora >= prazo;
 }
 
-function resolverTodosSlots(res) {
-  const melhores8 = getMelhoresTerceiros(res).slice(0,8);
-  const grupos8 = melhores8.map(t => t.grupo).sort();
-  const timesDe = {};
-  melhores8.forEach(t => timesDe[t.grupo] = t.t);
+// ══════════════════════════════════════════════
+// CLASSIFICAÇÃO — critérios FIFA 2026
+// ══════════════════════════════════════════════
+function calcStats(grupo, res) {
+  const st = {};
+  GR[grupo].forEach(t => st[t]={t,pts:0,j:0,v:0,e:0,d:0,gf:0,gc:0,sg:0});
+  JOGOS.filter(j=>j.g===grupo).forEach(j=>{
+    const r=res[j.id]; if(!r||r.c==null||r.f==null)return;
+    const ca=st[j.c],fo=st[j.f];
+    ca.j++;fo.j++;ca.gf+=r.c;ca.gc+=r.f;fo.gf+=r.f;fo.gc+=r.c;
+    ca.sg=ca.gf-ca.gc;fo.sg=fo.gf-fo.gc;
+    if(r.c>r.f){ca.pts+=3;ca.v++;fo.d++;}
+    else if(r.c<r.f){fo.pts+=3;fo.v++;ca.d++;}
+    else{ca.pts++;fo.pts++;ca.e++;fo.e++;}
+  });
+  return st;
+}
 
-  const alocacao = getAlocacaoTerceiros(grupos8);
-  const resultado = {};
+function h2h(times, grupo, res) {
+  const h={};
+  times.forEach(t=>h[t]={pts:0,sg:0,gf:0});
+  JOGOS.filter(j=>j.g===grupo&&times.includes(j.c)&&times.includes(j.f)).forEach(j=>{
+    const r=res[j.id]; if(!r||r.c==null||r.f==null)return;
+    h[j.c].gf+=r.c;h[j.c].sg+=r.c-r.f;
+    h[j.f].gf+=r.f;h[j.f].sg+=r.f-r.c;
+    if(r.c>r.f)h[j.c].pts+=3;
+    else if(r.c<r.f)h[j.f].pts+=3;
+    else{h[j.c].pts++;h[j.f].pts++;}
+  });
+  return h;
+}
 
-  CRUZAMENTOS_FIXOS.forEach(cr => {
-    for (const slot of [cr.casa, cr.fora]) {
-      if (!slot.startsWith("3")) {
-        const pos = parseInt(slot[0])-1;
-        const grupo = slot[1];
-        const cl = calcClassificacao(grupo, res);
-        resultado[`${cr.id}_${slot}`] = cl[pos]?.t || null;
+function classif(grupo, res) {
+  const st = calcStats(grupo, res);
+  const arr = Object.values(st);
+  arr.sort((a,b)=>{
+    if(b.pts!==a.pts)return b.pts-a.pts;
+    const empPts = arr.filter(x=>x.pts===a.pts);
+    if(empPts.length>1){
+      const hh = h2h(empPts.map(x=>x.t), grupo, res);
+      const ha=hh[a.t],hb=hh[b.t];
+      if(hb.pts!==ha.pts)return hb.pts-ha.pts;
+      if(hb.sg!==ha.sg)return hb.sg-ha.sg;
+      if(hb.gf!==ha.gf)return hb.gf-ha.gf;
+    }
+    if(b.sg!==a.sg)return b.sg-a.sg;
+    if(b.gf!==a.gf)return b.gf-a.gf;
+    return 0;
+  });
+  return arr;
+}
+
+function top8Terceiros(res) {
+  const t3=[];
+  Object.keys(GR).forEach(g=>{
+    const cl=classif(g,res);
+    if(cl[2]&&cl[2].j>0) t3.push({...cl[2],grupo:g});
+  });
+  return t3.sort((a,b)=>{
+    if(b.pts!==a.pts)return b.pts-a.pts;
+    if(b.sg!==a.sg)return b.sg-a.sg;
+    if(b.gf!==a.gf)return b.gf-a.gf;
+    return 0;
+  });
+}
+
+// Resolve todos os slots dos 32-avos garantindo unicidade
+// Só preenche terceiros quando houver exatamente 8 grupos classificados
+function resolveSlots(res) {
+  const t3all = top8Terceiros(res);
+  const t3top = t3all.slice(0,8);
+  const grupos8 = t3top.map(x=>x.grupo).sort();
+  const timeDoGrupo = {};
+  t3top.forEach(x=>timeDoGrupo[x.grupo]=x.t);
+
+  // Mapa de alocação: R_id → grupo do terceiro
+  let aloc = null;
+  if(grupos8.length===8){
+    const key = grupos8.join("");
+    const row = M495[key];
+    if(row){
+      // row = [1A_vs, 1B_vs, 1D_vs, 1E_vs, 1G_vs, 1I_vs, 1K_vs, 1L_vs]
+      aloc = {R7:row[0],R13:row[1],R9:row[2],R2:row[3],R10:row[4],R5:row[5],R15:row[6],R8:row[7]};
+    }
+  }
+
+  const out={};
+  CR32.forEach(cr=>{
+    for(const slot of [cr.c,cr.f]){
+      const key=`${cr.id}|${slot}`;
+      if(!slot.startsWith("3")){
+        const pos=parseInt(slot[0])-1;
+        const g=slot[1];
+        const cl=classif(g,res);
+        out[key]=cl[pos]?.t||null;
       } else {
-        if (alocacao && alocacao[cr.id]) {
-          const grupoTerceiro = alocacao[cr.id];
-          resultado[`${cr.id}_${slot}`] = timesDe[grupoTerceiro] || null;
+        // Só mostra terceiro se tiver alocação completa
+        if(aloc&&aloc[cr.id]){
+          out[key]=timeDoGrupo[aloc[cr.id]]||null;
         } else {
-          // Fallback: menos de 8 grupos com terceiros → mostra o melhor disponível do pool
-          const pools = slot.replace("3","").split("");
-          const candidato = melhores8.find(t => pools.includes(t.grupo));
-          resultado[`${cr.id}_${slot}`] = candidato ? `${candidato.t} (*)` : null;
+          out[key]=null; // "a definir"
         }
       }
     }
   });
-
-  return resultado;
+  return out;
 }
 
-function resolverSlot(slot, res, slotsResolvidos, crId) {
-  if (slotsResolvidos) return slotsResolvidos[`${crId}_${slot}`] || null;
-  if (slot.startsWith("3")) return null;
-  const pos = parseInt(slot[0])-1;
-  const grupo = slot[1];
-  const cl = calcClassificacao(grupo, res);
-  return cl[pos]?.t || null;
+// Constrói res mesclado: palpite do usuário + resultados reais (real tem prioridade)
+function resMesclado() {
+  const rm={};
+  JOGOS.forEach(j=>{
+    if(resReais[j.id]!=null) rm[j.id]=resReais[j.id];
+    else { const p=(pals.grupo||{})[j.id]; if(p&&p.c!=null&&p.f!=null) rm[j.id]={c:p.c,f:p.f}; }
+  });
+  return rm;
 }
 
-// ═══════════════════════════════════════
-// FIREBASE HELPERS
-// ═══════════════════════════════════════
-async function fbGet(col,id) {
-  try { const d=await getDoc(doc(db,col,id)); return d.exists()?d.data():null; } catch{return null;}
-}
-async function fbSet(col,id,data) {
-  try { await setDoc(doc(db,col,id),data,{merge:true}); return true; } catch(e){console.error(e);return false;}
-}
-
-// ═══════════════════════════════════════
+// ══════════════════════════════════════════════
 // PONTUAÇÃO
-// ═══════════════════════════════════════
-function calcPts(pal,res,cp,cr,ep,er) {
+// ══════════════════════════════════════════════
+function calcPts(palGrupo,resR,palConf,confR,palElim,elimR){
   let pts=0;
-  Object.entries(res||{}).forEach(([id,r])=>{
-    const p=(pal||{})[id]; if(!p||p.c==null||p.f==null)return;
+  Object.entries(resR||{}).forEach(([id,r])=>{
+    const p=(palGrupo||{})[id]; if(!p||p.c==null||p.f==null)return;
     if(p.c===r.c&&p.f===r.f){pts+=10;return;}
     const vR=r.c>r.f?1:r.f>r.c?-1:0,vP=p.c>p.f?1:p.f>p.c?-1:0;
     if(vR===vP)pts+=5;
   });
-  Object.entries(cr||{}).forEach(([fase,arr])=>{
+  Object.entries(elimR||{}).forEach(([id,r])=>{
+    const p=(palElim||{})[id]; if(!p||p.c==null||p.f==null)return;
+    if(p.c===r.c&&p.f===r.f){pts+=10;return;}
+    const vR=r.c>r.f?1:r.f>r.c?-1:0,vP=p.c>p.f?1:p.f>p.c?-1:0;
+    if(vR===vP)pts+=5;
+  });
+  Object.entries(confR||{}).forEach(([fase,arr])=>{
     (arr||[]).forEach((c,i)=>{
       if(!c?.casa||!c?.fora)return;
-      const x=(cp||{})[fase]||[],y=x[i];
-      if(y?.casa===c.casa&&y?.fora===c.fora)pts+=2;
+      const cp=((palConf||{})[fase]||[])[i];
+      if(cp?.casa===c.casa&&cp?.fora===c.fora)pts+=2;
     });
-  });
-  Object.entries(er||{}).forEach(([id,r])=>{
-    const p=(ep||{})[id]; if(!p||p.c==null||p.f==null)return;
-    if(p.c===r.c&&p.f===r.f){pts+=10;return;}
-    const vR=r.c>r.f?1:r.f>r.c?-1:0,vP=p.c>p.f?1:p.f>p.c?-1:0;
-    if(vR===vP)pts+=5;
   });
   return pts;
 }
 
-// ═══════════════════════════════════════
+// ══════════════════════════════════════════════
 // ESTADO GLOBAL
-// ═══════════════════════════════════════
-let usuario=null, pals={grupo:{},conf:{},elim:{}}, palsTravados=false;
-let resultados={}, confReais={}, elimJogos={}, elimRes={}, participantes=[];
-let isAdmin=false, telaAtual="login", grupoAtivo="A", faseAtiva="32avos";
+// ══════════════════════════════════════════════
+let usuario=null,pals={grupo:{},conf:{},elim:{}};
+let resReais={},confReais={},elimJogos={},elimResG={},participantes=[];
+let isAdmin=false,tela="login",grupoTab="A",faseTab="32avos";
 let saveTimer=null;
-
 const FASES=["32avos","Oitavas","Quartas","Semifinal","Final"];
 const FASES_N={"32avos":16,"Oitavas":8,"Quartas":4,"Semifinal":2,"Final":1};
 const FASES_L={"32avos":"32-avos","Oitavas":"Oitavas","Quartas":"Quartas","Semifinal":"Semifinal","Final":"Final"};
 
-// ═══════════════════════════════════════
-// TOAST
-// ═══════════════════════════════════════
+async function fbG(col,id){try{const d=await getDoc(doc(db,col,id));return d.exists()?d.data():null;}catch{return null;}}
+async function fbS(col,id,data){try{await setDoc(doc(db,col,id),data,{merge:true});return true;}catch(e){console.error(e);return false;}}
+
 function toast(msg,cor="#22c55e"){
   const t=document.getElementById("toast");
-  t.textContent=msg; t.style.background=cor;
-  t.style.opacity="1"; t.style.transform="translateX(-50%) translateY(0)";
+  t.textContent=msg;t.style.background=cor;t.style.opacity="1";t.style.transform="translateX(-50%) translateY(0)";
   setTimeout(()=>{t.style.opacity="0";t.style.transform="translateX(-50%) translateY(-20px)";},2500);
 }
 
 function agendarSave(){
-  if(palsTravados)return; // bloqueado após confirmação
   clearTimeout(saveTimer);
   saveTimer=setTimeout(async()=>{
     if(!usuario)return;
-    await fbSet("palpites",usuario.id,pals);
-    const el=document.getElementById("statusSave");
-    if(el){el.textContent="✓ salvo"; setTimeout(()=>{if(el)el.textContent="auto-save";},1500);}
+    await fbS("palpites",usuario.id,pals);
+    const el=document.getElementById("ss");
+    if(el){el.textContent="✓ salvo";setTimeout(()=>{if(el)el.textContent="auto-save";},1500);}
   },800);
 }
 
-// ═══════════════════════════════════════
-// RENDER ENGINE
-// ═══════════════════════════════════════
-function renderTela(){
+// ══════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════
+function renderApp(){
   document.getElementById("app").innerHTML="";
-  if(telaAtual==="login")return renderLogin();
-  renderHeader(); renderNav();
+  if(tela==="login")return renderLogin();
+  renderHeader();renderNav();
   const cont=document.createElement("div");
   cont.style.cssText="max-width:680px;margin:0 auto;padding:14px 12px 60px";
   document.getElementById("app").appendChild(cont);
-  if(telaAtual==="grupos")renderGrupos(cont);
-  else if(telaAtual==="elim")renderElim(cont);
-  else if(telaAtual==="ranking")renderRanking(cont);
-  else if(telaAtual==="admin")renderAdmin(cont);
+  if(tela==="grupos")renderGrupos(cont);
+  else if(tela==="elim")renderElim(cont);
+  else if(tela==="ranking")renderRanking(cont);
+  else if(tela==="admin")renderAdmin(cont);
 }
 
 function renderHeader(){
   const h=document.createElement("div");
   h.style.cssText="background:linear-gradient(90deg,#061506,#0a1f0a);border-bottom:2px solid #22c55e;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100";
-  h.innerHTML=`<div style="display:flex;align-items:center;gap:9px"><span style="font-size:1.3rem">⚽</span><div><div style="font-weight:900;color:#22c55e;font-size:.9rem;letter-spacing:2px">BOLÃO COPA 2026</div><div style="font-size:.62rem;color:#3a6a3a">${usuario?.nome} · <span id="statusSave">auto-save</span></div></div></div><div style="display:flex;gap:5px"><button onclick="window.recarregar()" style="background:#1a3a1a;color:#86efac;border:none;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:.72rem;font-weight:700">↺</button><button onclick="window.sair()" style="background:#1a0a0a;color:#f87171;border:none;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:.72rem;font-weight:700">Sair</button></div>`;
+  h.innerHTML=`<div style="display:flex;align-items:center;gap:9px"><span style="font-size:1.3rem">⚽</span><div><div style="font-weight:900;color:#22c55e;font-size:.9rem;letter-spacing:2px">BOLÃO COPA 2026</div><div style="font-size:.62rem;color:#3a6a3a">${usuario?.nome} · <span id="ss">auto-save</span></div></div></div><div style="display:flex;gap:5px"><button onclick="window._reload()" style="background:#1a3a1a;color:#86efac;border:none;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:.72rem;font-weight:700">↺</button><button onclick="window._sair()" style="background:#1a0a0a;color:#f87171;border:none;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:.72rem;font-weight:700">Sair</button></div>`;
   document.getElementById("app").appendChild(h);
 }
 
@@ -547,569 +434,417 @@ function renderNav(){
   n.style.cssText="display:flex;border-bottom:1px solid #1a3a1a;background:#040e04";
   [["grupos","⚽ Grupos"],["elim","🏆 Elim."],["ranking","📊 Ranking"],["admin","⚙️"]].forEach(([id,lbl])=>{
     const b=document.createElement("button");
-    b.style.cssText=`flex:1;padding:11px 4px;background:transparent;border:none;border-bottom:2px solid ${telaAtual===id?"#22c55e":"transparent"};color:${telaAtual===id?"#22c55e":"#3a6a3a"};font-weight:${telaAtual===id?700:400};font-size:.8rem;cursor:pointer`;
-    b.textContent=lbl; b.onclick=()=>{telaAtual=id;renderTela();};
+    b.style.cssText=`flex:1;padding:11px 4px;background:transparent;border:none;border-bottom:2px solid ${tela===id?"#22c55e":"transparent"};color:${tela===id?"#22c55e":"#3a6a3a"};font-weight:${tela===id?700:400};font-size:.8rem;cursor:pointer`;
+    b.textContent=lbl;b.onclick=()=>{tela=id;renderApp();};
     n.appendChild(b);
   });
   document.getElementById("app").appendChild(n);
 }
 
-// ═══════════════════════════════════════
-// LOGIN
-// ═══════════════════════════════════════
+// ── LOGIN ──────────────────────────────────────────
 function renderLogin(){
-  document.getElementById("app").innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px"><div style="width:100%;max-width:380px;text-align:center"><div style="font-size:3.5rem">⚽</div><h1 style="color:#22c55e;font-weight:900;font-size:2rem;letter-spacing:3px;margin:4px 0 2px">BOLÃO</h1><p style="color:#86efac;letter-spacing:4px;font-size:.8rem;margin:0 0 28px">COPA DO MUNDO 2026</p><div style="background:#0a1a0a;border:1px solid #1a3a1a;border-radius:16px;padding:24px;text-align:left"><label style="color:#86efac;font-size:.78rem;font-weight:700;letter-spacing:1px;display:block;margin-bottom:6px">SEU NOME</label><input id="inNome" placeholder="Ex: Marcelo" style="width:100%;padding:11px 14px;border-radius:8px;border:2px solid #1a3a1a;background:#061506;color:#fff;font-size:.95rem;outline:none;box-sizing:border-box;margin-bottom:14px"/><label style="color:#86efac;font-size:.78rem;font-weight:700;letter-spacing:1px;display:block;margin-bottom:6px">E-MAIL</label><input id="inEmail" type="email" placeholder="seu@email.com" style="width:100%;padding:11px 14px;border-radius:8px;border:2px solid #1a3a1a;background:#061506;color:#fff;font-size:.95rem;outline:none;box-sizing:border-box;margin-bottom:6px"/><div id="loginErro" style="color:#f87171;font-size:.78rem;min-height:18px;margin-bottom:4px"></div><button id="btnLogin" onclick="window.fazerLogin()" style="background:#22c55e;color:#000;border:none;border-radius:10px;padding:13px;width:100%;font-size:1rem;font-weight:700;cursor:pointer;margin-top:4px">Entrar no Bolão →</button><p style="color:#3a6a3a;font-size:.72rem;text-align:center;margin-top:12px;margin-bottom:0;line-height:1.5">Palpites sincronizados em tempo real para todos.</p></div></div></div>`;
-  document.getElementById("inEmail").addEventListener("keydown",e=>{if(e.key==="Enter")window.fazerLogin();});
+  document.getElementById("app").innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px"><div style="width:100%;max-width:380px;text-align:center"><div style="font-size:3.5rem">⚽</div><h1 style="color:#22c55e;font-weight:900;font-size:2rem;letter-spacing:3px;margin:4px 0 2px">BOLÃO</h1><p style="color:#86efac;letter-spacing:4px;font-size:.8rem;margin:0 0 28px">COPA DO MUNDO 2026</p><div style="background:#0a1a0a;border:1px solid #1a3a1a;border-radius:16px;padding:24px;text-align:left"><label style="color:#86efac;font-size:.78rem;font-weight:700;display:block;margin-bottom:6px">SEU NOME</label><input id="iN" placeholder="Ex: Marcelo" style="width:100%;padding:11px 14px;border-radius:8px;border:2px solid #1a3a1a;background:#061506;color:#fff;font-size:.95rem;outline:none;box-sizing:border-box;margin-bottom:14px"/><label style="color:#86efac;font-size:.78rem;font-weight:700;display:block;margin-bottom:6px">E-MAIL</label><input id="iE" type="email" placeholder="seu@email.com" style="width:100%;padding:11px 14px;border-radius:8px;border:2px solid #1a3a1a;background:#061506;color:#fff;font-size:.95rem;outline:none;box-sizing:border-box;margin-bottom:6px"/><div id="iErr" style="color:#f87171;font-size:.78rem;min-height:18px;margin-bottom:4px"></div><button id="iBt" onclick="window._login()" style="background:#22c55e;color:#000;border:none;border-radius:10px;padding:13px;width:100%;font-size:1rem;font-weight:700;cursor:pointer">Entrar no Bolão →</button><p style="color:#3a6a3a;font-size:.72rem;text-align:center;margin-top:12px;margin-bottom:0">Palpites sincronizados em tempo real.</p></div></div></div>`;
+  document.getElementById("iE").addEventListener("keydown",e=>{if(e.key==="Enter")window._login();});
 }
 
-window.fazerLogin=async function(){
-  const nome=document.getElementById("inNome").value.trim();
-  const email=document.getElementById("inEmail").value.trim().toLowerCase();
-  const erroEl=document.getElementById("loginErro");
-  if(!nome){erroEl.textContent="⚠ Por favor insira seu nome.";return;}
-  if(!email||!email.includes("@")){erroEl.textContent="⚠ Por favor insira um e-mail válido.";return;}
-  document.getElementById("btnLogin").textContent="Entrando...";
-  document.getElementById("btnLogin").disabled=true;
+window._login=async()=>{
+  const nome=document.getElementById("iN").value.trim();
+  const email=document.getElementById("iE").value.trim().toLowerCase();
+  const err=document.getElementById("iErr");
+  if(!nome){err.textContent="⚠ Insira seu nome.";return;}
+  if(!email||!email.includes("@")){err.textContent="⚠ E-mail inválido.";return;}
+  document.getElementById("iBt").textContent="Entrando...";
+  document.getElementById("iBt").disabled=true;
   try{
-    const sAtual=await fbGet("bolao","shared")||{participantes:[],resultados:{},confReais:{},elimJogos:{},elimRes:{}};
-    let p=sAtual.participantes.find(x=>x.email===email);
-    if(!p){p={id:`u_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,nome,email};sAtual.participantes.push(p);await fbSet("bolao","shared",sAtual);}
-    participantes=sAtual.participantes; resultados=sAtual.resultados||{}; confReais=sAtual.confReais||{}; elimJogos=sAtual.elimJogos||{}; elimRes=sAtual.elimRes||{};
-    usuario=p; localStorage.setItem("bolao_usuario",JSON.stringify(p));
-    const palSalvos=await fbGet("palpites",p.id);
-    if(palSalvos)pals=palSalvos;
-    telaAtual="grupos"; listenShared(); renderTela(); toast(`Bem-vindo, ${p.nome}! ⚽`);
-  }catch(err){document.getElementById("loginErro").textContent="Erro ao conectar. Tente novamente.";document.getElementById("btnLogin").textContent="Entrar no Bolão →";document.getElementById("btnLogin").disabled=false;}
+    const sh=await fbG("bolao","shared")||{participantes:[],resultados:{},confReais:{},elimJogos:{},elimRes:{}};
+    let p=sh.participantes.find(x=>x.email===email);
+    if(!p){p={id:`u_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,nome,email};sh.participantes.push(p);await fbS("bolao","shared",sh);}
+    participantes=sh.participantes;resReais=sh.resultados||{};confReais=sh.confReais||{};elimJogos=sh.elimJogos||{};elimResG=sh.elimRes||{};
+    usuario=p;localStorage.setItem("bu",JSON.stringify(p));
+    const ps=await fbG("palpites",p.id);if(ps)pals=ps;
+    tela="grupos";listenShared();renderApp();toast(`Bem-vindo, ${p.nome}! ⚽`);
+  }catch(e){document.getElementById("iErr").textContent="Erro ao conectar.";document.getElementById("iBt").textContent="Entrar no Bolão →";document.getElementById("iBt").disabled=false;}
 };
 
 function listenShared(){
-  onSnapshot(doc(db,"bolao","shared"),snap=>{
-    if(!snap.exists())return;
-    const d=snap.data();
-    resultados=d.resultados||{}; confReais=d.confReais||{}; elimJogos=d.elimJogos||{}; elimRes=d.elimRes||{}; participantes=d.participantes||[];
-    if(telaAtual!=="login")renderTela();
+  onSnapshot(doc(db,"bolao","shared"),s=>{
+    if(!s.exists())return;
+    const d=s.data();
+    resReais=d.resultados||{};confReais=d.confReais||{};elimJogos=d.elimJogos||{};elimResG=d.elimRes||{};participantes=d.participantes||[];
+    if(tela!=="login")renderApp();
   });
 }
 
-window.sair=function(){usuario=null;localStorage.removeItem("bolao_usuario");telaAtual="login";renderTela();};
-window.recarregar=async function(){
-  const d=await fbGet("bolao","shared");
-  if(d){resultados=d.resultados||{};confReais=d.confReais||{};elimJogos=d.elimJogos||{};elimRes=d.elimRes||{};participantes=d.participantes||[];}
-  renderTela();toast("Atualizado! ✓");
+window._sair=()=>{usuario=null;localStorage.removeItem("bu");tela="login";renderApp();};
+window._reload=async()=>{
+  const d=await fbG("bolao","shared");
+  if(d){resReais=d.resultados||{};confReais=d.confReais||{};elimJogos=d.elimJogos||{};elimResG=d.elimRes||{};participantes=d.participantes||[];}
+  renderApp();toast("Atualizado ✓");
 };
 
-// ═══════════════════════════════════════
-// GRUPOS + CLASSIFICAÇÃO
-// ═══════════════════════════════════════
+// ── GRUPOS ─────────────────────────────────────────
 function renderGrupos(cont){
   // Abas
   const abas=document.createElement("div");
   abas.style.cssText="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px";
-  Object.keys(GRUPOS).forEach(g=>{
+  Object.keys(GR).forEach(g=>{
     const b=document.createElement("button");
     b.textContent=g;
-    b.style.cssText=`background:${grupoAtivo===g?"#22c55e":"#0a1a0a"};color:${grupoAtivo===g?"#000":"#86efac"};border:1px solid ${grupoAtivo===g?"#22c55e":"#1a3a1a"};border-radius:8px;padding:5px 11px;cursor:pointer;font-weight:900;font-size:.85rem`;
-    b.onclick=()=>{grupoAtivo=g;renderTela();};
+    b.style.cssText=`background:${grupoTab===g?"#22c55e":"#0a1a0a"};color:${grupoTab===g?"#000":"#86efac"};border:1px solid ${grupoTab===g?"#22c55e":"#1a3a1a"};border-radius:8px;padding:5px 11px;cursor:pointer;font-weight:900;font-size:.85rem`;
+    b.onclick=()=>{grupoTab=g;renderApp();};
     abas.appendChild(b);
   });
   cont.appendChild(abas);
 
   const titulo=document.createElement("div");
   titulo.style.cssText="font-size:.75rem;color:#86efac;font-weight:700;margin-bottom:10px;letter-spacing:1px";
-  titulo.textContent=`GRUPO ${grupoAtivo} — ${GRUPOS[grupoAtivo].map(t=>`${BF(t)} ${t}`).join(" · ")}`;
+  titulo.textContent=`GRUPO ${grupoTab} — ${GR[grupoTab].map(t=>`${BF(t)} ${t}`).join(" · ")}`;
   cont.appendChild(titulo);
 
   // Jogos
-  JOGOS.filter(j=>j.g===grupoAtivo).forEach(j=>cont.appendChild(criarJogoEl(j,false)));
-
-  // Mescla palpites do usuário com resultados reais para simular a classificação
-  // Resultado real tem prioridade; se não há resultado real usa o palpite do usuário
-  const resMesclado = {};
-  JOGOS.filter(j=>j.g===grupoAtivo).forEach(j=>{
-    if (resultados[j.id] != null) {
-      resMesclado[j.id] = resultados[j.id];
-    } else {
-      const p = (pals.grupo||{})[j.id];
-      if (p && p.c != null && p.f != null) resMesclado[j.id] = {c:p.c, f:p.f};
-    }
+  JOGOS.filter(j=>j.g===grupoTab).forEach(j=>{
+    const travado=jogoTravado(j);
+    const pal=(pals.grupo||{})[j.id];
+    const res=resReais[j.id];
+    const bloq=(!isAdmin&&travado)||(!isAdmin&&!!res);
+    cont.appendChild(criarJogoRow(j,pal,res,bloq,false));
   });
-  cont.appendChild(criarTabClassificacao(grupoAtivo, resMesclado));
 
-  // Info pontuação
+  // Classificação simulada
+  const rm=resMesclado();
+  cont.appendChild(criarTabClassif(grupoTab,rm));
+
   const info=document.createElement("div");
   info.style.cssText="margin-top:10px;padding:10px 14px;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:10px;font-size:.72rem;color:#3a6a3a;line-height:1.9";
-  info.innerHTML="🎯 Placar exato → <strong style='color:#FFD700'>10pts</strong> &nbsp;|&nbsp; ✅ Vencedor → <strong style='color:#FFD700'>5pts</strong>";
+  info.innerHTML="🎯 Placar exato → <strong style='color:#FFD700'>10pts</strong> &nbsp;|&nbsp; ✅ Vencedor → <strong style='color:#FFD700'>5pts</strong> &nbsp;|&nbsp; 🔒 Trava 24h antes do jogo";
   cont.appendChild(info);
-
-  // Botão confirmar e travar (ou status travado)
-  cont.appendChild(criarBotaoTravar());
 }
 
-function criarBotaoTravar(){
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "margin-top:16px";
-
-  if(palsTravados){
-    wrap.innerHTML = `
-      <div style="background:#061a06;border:2px solid #22c55e;border-radius:12px;padding:14px;text-align:center">
-        <div style="font-size:1.5rem">🔒</div>
-        <div style="color:#22c55e;font-weight:900;font-size:.9rem;margin-top:4px">PALPITES CONFIRMADOS E TRAVADOS</div>
-        <div style="color:#3a6a3a;font-size:.72rem;margin-top:4px">Seus palpites estão registrados. Boa sorte! ⚽</div>
-      </div>`;
-    return wrap;
-  }
-
-  // Conta quantos jogos foram preenchidos
-  const totalJogos = JOGOS.length;
-  const preenchidos = JOGOS.filter(j => {
-    const p = (pals.grupo||{})[j.id];
-    return p && p.c != null && p.f != null;
-  }).length;
-  const faltam = totalJogos - preenchidos;
-
-  if(faltam > 0){
-    wrap.innerHTML = `
-      <div style="background:#0a1a0a;border:1px solid #2a4a2a;border-radius:12px;padding:14px;text-align:center">
-        <div style="color:#4a7a4a;font-size:.8rem;margin-bottom:6px">⏳ Preencha todos os palpites antes de confirmar</div>
-        <div style="background:#0d2a0d;border-radius:8px;padding:8px">
-          <span style="color:#22c55e;font-weight:900;font-size:1.1rem">${preenchidos}</span>
-          <span style="color:#4a7a4a;font-size:.8rem"> / ${totalJogos} jogos preenchidos</span>
-        </div>
-        <div style="margin-top:8px;background:#1a1a1a;border-radius:6px;height:6px;overflow:hidden">
-          <div style="background:#22c55e;height:100%;width:${Math.round(preenchidos/totalJogos*100)}%;transition:width .3s"></div>
-        </div>
-      </div>`;
-    return wrap;
-  }
-
-  // Todos preenchidos — mostra botão de confirmar
-  const btn = document.createElement("button");
-  btn.style.cssText = "width:100%;background:linear-gradient(135deg,#166534,#15803d);color:#fff;border:2px solid #22c55e;border-radius:12px;padding:16px;font-size:1rem;font-weight:900;cursor:pointer;letter-spacing:1px";
-  btn.innerHTML = "✅ CONFIRMAR E TRAVAR PALPITES";
-  btn.onclick = () => abrirModalTravar();
-  wrap.appendChild(btn);
-
-  const aviso = document.createElement("div");
-  aviso.style.cssText = "margin-top:8px;text-align:center;font-size:.7rem;color:#4a7a4a";
-  aviso.textContent = "⚠️ Após confirmar, seus palpites não poderão ser alterados.";
-  wrap.appendChild(aviso);
-
-  return wrap;
-}
-
-function abrirModalTravar(){
-  const ov = document.createElement("div");
-  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px";
-  ov.innerHTML = `
-    <div style="background:#0a1a0a;border:2px solid #f59e0b;border-radius:16px;padding:24px;width:100%;max-width:340px;text-align:center">
-      <div style="font-size:2rem">⚠️</div>
-      <div style="color:#f59e0b;font-weight:900;font-size:1rem;margin:10px 0 8px">ATENÇÃO!</div>
-      <div style="color:#ccc;font-size:.85rem;line-height:1.6;margin-bottom:20px">
-        Você tem <strong>absoluta certeza</strong> que deseja confirmar seus palpites?<br><br>
-        <span style="color:#f87171;font-weight:700">A partir deste momento, não será possível fazer nenhuma alteração.</span>
-      </div>
-      <div style="display:flex;gap:10px">
-        <button id="mCancelar" style="flex:1;background:#1a0a0a;color:#f87171;border:1px solid #4a1a1a;border-radius:8px;padding:12px;cursor:pointer;font-weight:700">Não, voltar</button>
-        <button id="mConfirmar" style="flex:1;background:#166534;color:#fff;border:1px solid #22c55e;border-radius:8px;padding:12px;cursor:pointer;font-weight:900">Sim, confirmar!</button>
-      </div>
-    </div>`;
-  document.body.appendChild(ov);
-  document.getElementById("mCancelar").onclick = () => ov.remove();
-  document.getElementById("mConfirmar").onclick = async () => {
-    document.getElementById("mConfirmar").textContent = "Salvando...";
-    document.getElementById("mConfirmar").disabled = true;
-    const palsFinal = {...pals, _travado: true, _dataConfirmacao: new Date().toISOString()};
-    const ok = await fbSet("palpites", usuario.id, palsFinal);
-    if(ok){
-      palsTravados = true;
-      pals = palsFinal;
-      // Atualiza participante como travado no shared
-      const sAtual = await fbGet("bolao","shared") || {};
-      const parts = sAtual.participantes || [];
-      const idx = parts.findIndex(p => p.id === usuario.id);
-      if(idx >= 0) parts[idx].travado = true;
-      await fbSet("bolao","shared",{participantes: parts});
-      ov.remove();
-      renderTela();
-      toast("Palpites confirmados e travados! 🔒");
-    } else {
-      document.getElementById("mConfirmar").textContent = "Erro! Tente novamente";
-      document.getElementById("mConfirmar").disabled = false;
-    }
-  };
-}
-
-function criarTabClassificacao(grupo, resParaCalc){
-  // resParaCalc: mescla de palpites do usuário + resultados reais
-  const cl = calcClassificacao(grupo, resParaCalc || resultados);
-  const temPalpite = JOGOS.filter(j => j.g === grupo && resParaCalc && resParaCalc[j.id] != null).length;
-  const temReal = JOGOS.filter(j => j.g === grupo && resultados[j.id] != null).length;
-  const totalJogos = JOGOS.filter(j => j.g === grupo).length;
-  const jogosDisputados = temPalpite;
-  const isPalpite = temReal < temPalpite; // tem jogos simulados por palpite
-
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "margin-top:14px;background:#060e06;border:1px solid #1a3a1a;border-radius:12px;overflow:hidden";
-
-  // Título com progresso
-  const titulo = document.createElement("div");
-  titulo.style.cssText = "padding:8px 12px;background:#0a1a0a;font-size:.72rem;font-weight:800;color:#86efac;letter-spacing:1px;border-bottom:1px solid #1a3a1a;display:flex;justify-content:space-between;align-items:center";
-  const labelSim = isPalpite ? '<span style="background:#1a2a4a;color:#93c5fd;font-size:.58rem;padding:1px 5px;border-radius:4px;margin-left:5px">SIMULADO</span>' : '';
-  const labelReal = temReal > 0 ? `<span style="color:#22c55e;font-size:.6rem">${temReal} real${temReal>1?'is':''}</span>` : '';
-  titulo.innerHTML = `<span>📊 CLASSIFICAÇÃO — GRUPO ${grupo}${labelSim}</span><span style="color:#3a6a3a;font-weight:400;display:flex;gap:6px;align-items:center">${labelReal}<span>${jogosDisputados}/${totalJogos}</span></span>`;
-  wrap.appendChild(titulo);
-
-  if (jogosDisputados === 0) {
-    const vazio = document.createElement("div");
-    vazio.style.cssText = "padding:14px;text-align:center;color:#3a6a3a;font-size:.75rem";
-    vazio.textContent = "Aguardando resultados...";
-    wrap.appendChild(vazio);
-    return wrap;
-  }
-
-  // Header: #, Time, J, V, E, D, GF, GC, SG, Pts
-  const cols = "20px 1fr 22px 22px 22px 22px 26px 26px 30px 30px";
-  const header = document.createElement("div");
-  header.style.cssText = `display:grid;grid-template-columns:${cols};gap:1px;padding:5px 10px;font-size:.62rem;color:#4a7a4a;font-weight:700;border-bottom:1px solid #0d1a0d;text-align:center`;
-  header.innerHTML = "<div>#</div><div style='text-align:left'>Time</div><div>J</div><div>V</div><div>E</div><div>D</div><div>GF</div><div>GC</div><div>SG</div><div>Pts</div>";
-  wrap.appendChild(header);
-
-  cl.forEach((s, i) => {
-    const cor = i===0?"#22c55e":i===1?"#3b82f6":i===2?"#f59e0b":"#4a6a4a";
-    const bgRow = i<2?"rgba(34,197,94,0.06)":i===2?"rgba(245,158,11,0.05)":"transparent";
-    const badge = i<2
-      ? '<span style="font-size:.5rem;background:#22c55e;color:#000;border-radius:3px;padding:1px 3px;margin-left:2px;vertical-align:middle">✓</span>'
-      : i===2
-        ? '<span style="font-size:.5rem;background:#f59e0b;color:#000;border-radius:3px;padding:1px 3px;margin-left:2px;vertical-align:middle">?</span>'
-        : "";
-    const sgStr = s.sg > 0 ? `+${s.sg}` : `${s.sg}`;
-    const sgCor = s.sg > 0 ? "#22c55e" : s.sg < 0 ? "#f87171" : "#888";
-
-    const row = document.createElement("div");
-    row.style.cssText = `display:grid;grid-template-columns:${cols};gap:1px;padding:7px 10px;font-size:.72rem;border-bottom:1px solid #0a0f0a;align-items:center;text-align:center;background:${bgRow}`;
-    row.innerHTML = `
-      <div style="color:${cor};font-weight:800">${i+1}</div>
-      <div style="text-align:left;display:flex;align-items:center;gap:3px;overflow:hidden">
-        <span style="font-size:1rem">${BF(s.t)}</span>
-        <span style="color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.7rem">${s.t}</span>
-        ${badge}
-      </div>
-      <div style="color:#999">${s.j}</div>
-      <div style="color:${s.v>0?"#22c55e":"#666"}">${s.v}</div>
-      <div style="color:${s.e>0?"#f59e0b":"#666"}">${s.e}</div>
-      <div style="color:${s.d>0?"#f87171":"#666"}">${s.d}</div>
-      <div style="color:#999">${s.gf}</div>
-      <div style="color:#999">${s.gc}</div>
-      <div style="color:${sgCor};font-weight:700">${sgStr}</div>
-      <div style="color:${cor};font-weight:900;font-size:.8rem">${s.pts}</div>
-    `;
-    wrap.appendChild(row);
-  });
-
-  // Legenda
-  const leg = document.createElement("div");
-  leg.style.cssText = "padding:6px 10px;font-size:.6rem;color:#3a4a3a;display:flex;gap:14px;flex-wrap:wrap";
-  leg.innerHTML = `
-    <span><span style="color:#22c55e">✓</span> Top 2 — classificado</span>
-    <span><span style="color:#f59e0b">?</span> Possível 3º melhor</span>
-    <span style="color:#2a3a2a">${isPalpite ? "📝 Baseado nos seus palpites" : "✅ Resultados reais"} · Desempate: H2H→SG→GF</span>
-  `;
-  wrap.appendChild(leg);
-
-  return wrap;
-}
-
-// ═══════════════════════════════════════
-// JOGO ELEMENT
-// ═══════════════════════════════════════
-function criarJogoEl(jogo,isElim){
-  const pal=isElim?(pals.elim||{})[jogo.id]:(pals.grupo||{})[jogo.id];
-  const res=isElim?(elimRes||{})[jogo.id]:(resultados||{})[jogo.id];
-  const bloqueado=(!isAdmin&&!!res)||(!isAdmin&&palsTravados);
+// ── JOGO ROW ────────────────────────────────────────
+function criarJogoRow(jogo,pal,res,bloq,isElim){
+  const travado=jogoTravado(jogo);
   const acertouPlacar=res&&pal&&pal.c===res.c&&pal.f===res.f;
   const acertouVenc=res&&pal&&!acertouPlacar&&(()=>{const vR=res.c>res.f?1:res.f>res.c?-1:0,vP=(pal.c||0)>(pal.f||0)?1:(pal.f||0)>(pal.c||0)?-1:0;return vR===vP;})();
   const pts=acertouPlacar?10:acertouVenc?5:0;
-  const borda=acertouPlacar?"#22c55e":acertouVenc?"#f59e0b":"#1a3a1a";
+  const borda=acertouPlacar?"#22c55e":acertouVenc?"#f59e0b":travado&&!res?"#2a2a1a":"#1a3a1a";
+
   const el=document.createElement("div");
   el.style.cssText=`background:linear-gradient(135deg,#0a1a0a,#081208);border:1px solid ${borda};border-radius:12px;padding:10px 12px;margin-bottom:8px`;
+
   const info=document.createElement("div");
-  info.style.cssText="font-size:.68rem;color:#444;margin-bottom:5px";
-  info.textContent=`${jogo.d||""} ${jogo.h?`· ${jogo.h}`:""} ${jogo.s?`· ${jogo.s}`:""}`;
+  info.style.cssText="font-size:.68rem;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center";
+  info.innerHTML=`<span style="color:#444">${jogo.d||""} · ${jogo.h||""} · ${jogo.s||""}</span>${travado&&!res&&!isAdmin?'<span style="color:#f59e0b;font-size:.6rem">🔒 Prazo encerrado</span>':''}`;
   el.appendChild(info);
+
   const row=document.createElement("div");
   row.style.cssText="display:flex;align-items:center;gap:8px;flex-wrap:wrap";
-  const tc=document.createElement("div");
-  tc.style.cssText="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:4px;min-width:80px";
-  tc.innerHTML=`<span style="font-size:.78rem;color:#ccc">${jogo.c}</span><span style="font-size:1.1rem">${BF(jogo.c)}</span>`;
+
+  const tc=document.createElement("div");tc.style.cssText="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:4px;min-width:80px";
+  tc.innerHTML=`<span style="font-size:.78rem;color:#ccc">${jogo.c||jogo.casa||""}</span><span style="font-size:1.1rem">${BF(jogo.c||jogo.casa||"")}</span>`;
   row.appendChild(tc);
-  const inp=document.createElement("div");
-  inp.style.cssText="display:flex;align-items:center;gap:5px;background:#060e06;border-radius:8px;padding:4px 8px";
-  const mkI=(val,cb)=>{const i=document.createElement("input");i.type="number";i.min="0";i.max="20";i.value=val!=null?val:"";i.style.cssText=`width:42px;text-align:center;font-size:1.1rem;font-weight:700;background:#0d1a0d;border:2px solid ${bloqueado?"#2d3d2d":"#22c55e"};border-radius:6px;color:${bloqueado?"#556655":"#fff"};padding:5px 0;outline:none`;i.disabled=bloqueado;i.addEventListener("input",e=>{const v=e.target.value===""?null:Math.max(0,Math.min(20,parseInt(e.target.value)||0));cb(v);});return i;};
-  inp.appendChild(mkI(pal?.c,v=>{if(isElim){pals.elim=pals.elim||{};pals.elim[jogo.id]={...(pals.elim[jogo.id]||{}),c:v};}else{pals.grupo=pals.grupo||{};pals.grupo[jogo.id]={...(pals.grupo[jogo.id]||{}),c:v};}agendarSave();}));
+
+  const inp=document.createElement("div");inp.style.cssText="display:flex;align-items:center;gap:5px;background:#060e06;border-radius:8px;padding:4px 8px";
+  const mkI=(val,cb)=>{
+    const i=document.createElement("input");i.type="number";i.min="0";i.max="20";
+    i.value=val!=null?val:"";
+    i.style.cssText=`width:42px;text-align:center;font-size:1.1rem;font-weight:700;background:#0d1a0d;border:2px solid ${bloq?"#2d3d2d":"#22c55e"};border-radius:6px;color:${bloq?"#556655":"#fff"};padding:5px 0;outline:none`;
+    i.disabled=bloq;
+    i.addEventListener("input",e=>{const v=e.target.value===""?null:Math.max(0,Math.min(20,parseInt(e.target.value)||0));cb(v);});
+    return i;
+  };
+  inp.appendChild(mkI(pal?.c,v=>{
+    if(isElim){pals.elim=pals.elim||{};pals.elim[jogo.id]={...(pals.elim[jogo.id]||{}),c:v};}
+    else{pals.grupo=pals.grupo||{};pals.grupo[jogo.id]={...(pals.grupo[jogo.id]||{}),c:v};}
+    agendarSave();
+  }));
   const sp=document.createElement("span");sp.style.cssText="color:#22c55e;font-weight:900";sp.textContent="×";inp.appendChild(sp);
-  inp.appendChild(mkI(pal?.f,v=>{if(isElim){pals.elim=pals.elim||{};pals.elim[jogo.id]={...(pals.elim[jogo.id]||{}),f:v};}else{pals.grupo=pals.grupo||{};pals.grupo[jogo.id]={...(pals.grupo[jogo.id]||{}),f:v};}agendarSave();}));
+  inp.appendChild(mkI(pal?.f,v=>{
+    if(isElim){pals.elim=pals.elim||{};pals.elim[jogo.id]={...(pals.elim[jogo.id]||{}),f:v};}
+    else{pals.grupo=pals.grupo||{};pals.grupo[jogo.id]={...(pals.grupo[jogo.id]||{}),f:v};}
+    agendarSave();
+  }));
   row.appendChild(inp);
-  const tf=document.createElement("div");
-  tf.style.cssText="flex:1;display:flex;align-items:center;gap:4px;min-width:80px";
-  tf.innerHTML=`<span style="font-size:1.1rem">${BF(jogo.f)}</span><span style="font-size:.78rem;color:#ccc">${jogo.f}</span>`;
+
+  const tf=document.createElement("div");tf.style.cssText="flex:1;display:flex;align-items:center;gap:4px;min-width:80px";
+  tf.innerHTML=`<span style="font-size:1.1rem">${BF(jogo.f||jogo.fora||"")}</span><span style="font-size:.78rem;color:#ccc">${jogo.f||jogo.fora||""}</span>`;
   row.appendChild(tf);
+
   if(pts>0){const b=document.createElement("span");b.style.cssText=`background:${pts===10?"#22c55e":"#f59e0b"};color:#000;border-radius:20px;padding:1px 8px;font-weight:900;font-size:.72rem`;b.textContent=`+${pts}pts`;row.appendChild(b);}
   if(res&&!isAdmin){const r=document.createElement("span");r.style.cssText="background:#1a2a1a;border:1px solid #2a4a2a;border-radius:6px;padding:2px 8px;color:#FFD700;font-weight:700;font-size:.82rem";r.textContent=`${res.c}×${res.f}`;row.appendChild(r);}
-  if(isAdmin){const btnR=document.createElement("button");btnR.style.cssText="background:#FFD700;color:#000;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:700;font-size:.78rem";btnR.textContent=res?`${res.c}×${res.f} ✏️`:"Resultado";btnR.onclick=()=>abrirModal(jogo,isElim);row.appendChild(btnR);}
+  if(isAdmin){
+    const br=document.createElement("button");br.style.cssText="background:#FFD700;color:#000;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:700;font-size:.78rem";
+    br.textContent=res?`${res.c}×${res.f} ✏️`:"Resultado";
+    br.onclick=()=>modalResultado(jogo,isElim);
+    row.appendChild(br);
+  }
   el.appendChild(row);
   return el;
 }
 
-function abrirModal(jogo,isElim){
-  const res=isElim?(elimRes[jogo.id]||{c:0,f:0}):(resultados[jogo.id]||{c:0,f:0});
+function modalResultado(jogo,isElim){
+  const r=isElim?(elimResG[jogo.id]||{c:0,f:0}):(resReais[jogo.id]||{c:0,f:0});
   const ov=document.createElement("div");
-  ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px";
-  ov.innerHTML=`<div style="background:#0a1a0a;border:2px solid #FFD700;border-radius:16px;padding:24px;width:100%;max-width:320px;text-align:center"><div style="font-size:.8rem;color:#FFD700;font-weight:700;margin-bottom:16px">RESULTADO OFICIAL</div><div style="font-size:.9rem;color:#ccc;margin-bottom:12px">${BF(jogo.c)} ${jogo.c} × ${jogo.f} ${BF(jogo.f)}</div><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px"><input id="mC" type="number" min="0" max="20" value="${res.c}" style="width:60px;text-align:center;font-size:1.5rem;font-weight:900;background:#061506;border:2px solid #22c55e;border-radius:8px;color:#fff;padding:8px 0;outline:none"/><span style="color:#FFD700;font-size:1.5rem;font-weight:900">×</span><input id="mF" type="number" min="0" max="20" value="${res.f}" style="width:60px;text-align:center;font-size:1.5rem;font-weight:900;background:#061506;border:2px solid #22c55e;border-radius:8px;color:#fff;padding:8px 0;outline:none"/></div><div style="display:flex;gap:10px"><button id="mCan" style="flex:1;background:#1a0a0a;color:#f87171;border:none;border-radius:8px;padding:11px;cursor:pointer;font-weight:700">Cancelar</button><button id="mSav" style="flex:1;background:#22c55e;color:#000;border:none;border-radius:8px;padding:11px;cursor:pointer;font-weight:700">Salvar ✓</button></div></div>`;
+  ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px";
+  ov.innerHTML=`<div style="background:#0a1a0a;border:2px solid #FFD700;border-radius:16px;padding:24px;width:100%;max-width:320px;text-align:center"><div style="color:#FFD700;font-weight:900;margin-bottom:12px">RESULTADO OFICIAL</div><div style="color:#ccc;font-size:.9rem;margin-bottom:12px">${BF(jogo.c||jogo.casa)} ${jogo.c||jogo.casa} × ${jogo.f||jogo.fora} ${BF(jogo.f||jogo.fora)}</div><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px"><input id="mC" type="number" min="0" max="20" value="${r.c}" style="width:60px;text-align:center;font-size:1.5rem;font-weight:900;background:#061506;border:2px solid #22c55e;border-radius:8px;color:#fff;padding:8px 0;outline:none"/><span style="color:#FFD700;font-size:1.5rem">×</span><input id="mF" type="number" min="0" max="20" value="${r.f}" style="width:60px;text-align:center;font-size:1.5rem;font-weight:900;background:#061506;border:2px solid #22c55e;border-radius:8px;color:#fff;padding:8px 0;outline:none"/></div><div style="display:flex;gap:10px"><button id="mCan" style="flex:1;background:#1a0a0a;color:#f87171;border:none;border-radius:8px;padding:11px;cursor:pointer;font-weight:700">Cancelar</button><button id="mSav" style="flex:1;background:#22c55e;color:#000;border:none;border-radius:8px;padding:11px;cursor:pointer;font-weight:700">Salvar ✓</button></div></div>`;
   document.body.appendChild(ov);
   document.getElementById("mCan").onclick=()=>ov.remove();
   document.getElementById("mSav").onclick=async()=>{
     const c=parseInt(document.getElementById("mC").value)||0,f=parseInt(document.getElementById("mF").value)||0;
-    if(isElim){elimRes[jogo.id]={c,f};await fbSet("bolao","shared",{elimRes});}
-    else{resultados[jogo.id]={c,f};await fbSet("bolao","shared",{resultados});}
-    ov.remove();renderTela();toast("Resultado salvo ✅");
+    if(isElim){elimResG[jogo.id]={c,f};await fbS("bolao","shared",{elimRes:elimResG});}
+    else{resReais[jogo.id]={c,f};await fbS("bolao","shared",{resultados:resReais});}
+    ov.remove();renderApp();toast("Resultado salvo ✅");
   };
 }
 
-// ═══════════════════════════════════════
-// ELIMINATÓRIAS — com cruzamentos automáticos
-// ═══════════════════════════════════════
+// ── TABELA CLASSIFICAÇÃO ────────────────────────────
+function criarTabClassif(grupo, rm){
+  const cl=classif(grupo,rm);
+  const jogosC=JOGOS.filter(j=>j.g===grupo&&rm[j.id]!=null).length;
+  const total=JOGOS.filter(j=>j.g===grupo).length;
+  const temPalpite=JOGOS.filter(j=>j.g===grupo&&rm[j.id]!=null&&!resReais[j.id]).length>0;
+
+  const wrap=document.createElement("div");
+  wrap.style.cssText="margin-top:14px;background:#060e06;border:1px solid #1a3a1a;border-radius:12px;overflow:hidden";
+
+  const titulo=document.createElement("div");
+  titulo.style.cssText="padding:8px 12px;background:#0a1a0a;font-size:.72rem;font-weight:800;color:#86efac;letter-spacing:1px;border-bottom:1px solid #1a3a1a;display:flex;justify-content:space-between;align-items:center";
+  titulo.innerHTML=`<span>📊 CLASSIFICAÇÃO — GRUPO ${grupo}${temPalpite?'<span style="background:#1a2a4a;color:#93c5fd;font-size:.55rem;padding:1px 5px;border-radius:4px;margin-left:5px">SIMULADO</span>':''}</span><span style="color:#3a6a3a;font-weight:400">${jogosC}/${total} jogos</span>`;
+  wrap.appendChild(titulo);
+
+  if(jogosC===0){
+    const v=document.createElement("div");v.style.cssText="padding:12px;text-align:center;color:#3a6a3a;font-size:.75rem";
+    v.textContent="Preencha seus palpites para simular a classificação";
+    wrap.appendChild(v);return wrap;
+  }
+
+  const cols="20px 1fr 22px 22px 22px 22px 26px 26px 30px 30px";
+  const hdr=document.createElement("div");
+  hdr.style.cssText=`display:grid;grid-template-columns:${cols};gap:1px;padding:5px 10px;font-size:.62rem;color:#4a7a4a;font-weight:700;border-bottom:1px solid #0d1a0d;text-align:center`;
+  hdr.innerHTML="<div>#</div><div style='text-align:left'>Time</div><div>J</div><div>V</div><div>E</div><div>D</div><div>GF</div><div>GC</div><div>SG</div><div>Pts</div>";
+  wrap.appendChild(hdr);
+
+  cl.forEach((s,i)=>{
+    const cor=i===0?"#22c55e":i===1?"#3b82f6":i===2?"#f59e0b":"#4a6a4a";
+    const bg=i<2?"rgba(34,197,94,0.05)":i===2?"rgba(245,158,11,0.04)":"transparent";
+    const badge=i<2?'<span style="font-size:.5rem;background:#22c55e;color:#000;border-radius:3px;padding:0 2px;margin-left:2px">✓</span>':i===2?'<span style="font-size:.5rem;background:#f59e0b;color:#000;border-radius:3px;padding:0 2px;margin-left:2px">?</span>':"";
+    const sg=s.sg>0?`+${s.sg}`:`${s.sg}`;
+    const sgC=s.sg>0?"#22c55e":s.sg<0?"#f87171":"#888";
+    const row=document.createElement("div");
+    row.style.cssText=`display:grid;grid-template-columns:${cols};gap:1px;padding:7px 10px;font-size:.72rem;border-bottom:1px solid #0a0f0a;align-items:center;text-align:center;background:${bg}`;
+    row.innerHTML=`<div style="color:${cor};font-weight:800">${i+1}</div><div style="text-align:left;display:flex;align-items:center;gap:3px;overflow:hidden"><span>${BF(s.t)}</span><span style="color:#ddd;font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.t}</span>${badge}</div><div style="color:#999">${s.j}</div><div style="color:${s.v>0?"#22c55e":"#666"}">${s.v}</div><div style="color:${s.e>0?"#f59e0b":"#666"}">${s.e}</div><div style="color:${s.d>0?"#f87171":"#666"}">${s.d}</div><div style="color:#999">${s.gf}</div><div style="color:#999">${s.gc}</div><div style="color:${sgC};font-weight:700">${sg}</div><div style="color:${cor};font-weight:900;font-size:.8rem">${s.pts}</div>`;
+    wrap.appendChild(row);
+  });
+
+  const leg=document.createElement("div");leg.style.cssText="padding:6px 10px;font-size:.6rem;color:#3a4a3a;display:flex;gap:12px;flex-wrap:wrap";
+  leg.innerHTML=`<span><span style="color:#22c55e">✓</span> Top 2</span><span><span style="color:#f59e0b">?</span> Possível 3º melhor</span><span style="color:#2a3a2a">Desempate: H2H→SG→GF</span>`;
+  wrap.appendChild(leg);
+  return wrap;
+}
+
+// ── ELIMINATÓRIAS ───────────────────────────────────
 function renderElim(cont){
   const abas=document.createElement("div");
   abas.style.cssText="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap";
   FASES.forEach(f=>{
-    const b=document.createElement("button");
-    b.textContent=FASES_L[f];
-    b.style.cssText=`background:${faseAtiva===f?"#1d4ed8":"#0a1220"};color:${faseAtiva===f?"#fff":"#93c5fd"};border:1px solid ${faseAtiva===f?"#3b82f6":"#1e3a5f"};border-radius:8px;padding:5px 11px;cursor:pointer;font-weight:700;font-size:.82rem`;
-    b.onclick=()=>{faseAtiva=f;renderTela();};
+    const b=document.createElement("button");b.textContent=FASES_L[f];
+    b.style.cssText=`background:${faseTab===f?"#1d4ed8":"#0a1220"};color:${faseTab===f?"#fff":"#93c5fd"};border:1px solid ${faseTab===f?"#3b82f6":"#1e3a5f"};border-radius:8px;padding:5px 11px;cursor:pointer;font-weight:700;font-size:.82rem`;
+    b.onclick=()=>{faseTab=f;renderApp();};
     abas.appendChild(b);
   });
   cont.appendChild(abas);
 
-  // Resultados mesclados (palpites + reais) para simular classificação e confrontos
-  const rm = buildResMesclado();
+  if(faseTab==="32avos"){
+    const rm=resMesclado();
+    const slots=resolveSlots(rm);
+    const t3=top8Terceiros(rm);
+    const grupos8completos=t3.length>=8;
 
-  if(faseAtiva==="32avos"){
     const box=document.createElement("div");
     box.style.cssText="background:#080f1a;border:1px solid #1e3a5f;border-radius:12px;padding:14px;margin-bottom:14px";
-    box.innerHTML=`<div style="font-weight:800;color:#93c5fd;font-size:.78rem;margin-bottom:4px;letter-spacing:1px">32-AVOS DE FINAL — CRUZAMENTOS OFICIAIS FIFA</div><div style="font-size:.68rem;color:#3a5a7a;margin-bottom:12px">Simulado com base nos seus palpites · Atualiza conforme resultados reais</div>`;
+    box.innerHTML=`<div style="font-weight:800;color:#93c5fd;font-size:.78rem;margin-bottom:4px;letter-spacing:1px">32-AVOS DE FINAL — CRUZAMENTOS OFICIAIS FIFA</div><div style="font-size:.68rem;color:#3a5a7a;margin-bottom:12px">${grupos8completos?"Simulado com base nos palpites · Terceiros definidos":"Aguardando palpites de todos os grupos para definir os terceiros"}</div>`;
 
-    // Resolve todos os slots de uma vez para evitar times repetidos
-    const slotsResolvidos = resolverTodosSlots(rm);
-
-    CRUZAMENTOS_FIXOS.forEach(cr=>{
-      const timeCasa=resolverSlot(cr.casa,rm,slotsResolvidos,cr.id);
-      const timeFora=resolverSlot(cr.fora,rm,slotsResolvidos,cr.id);
-      const jogoConfirmado=(elimJogos["32avos"]||[]).find(j=>j.id===cr.id);
-      const res=jogoConfirmado?(elimRes[jogoConfirmado.id]||null):null;
+    CR32.forEach(cr=>{
+      const timeCasa=slots[`${cr.id}|${cr.c}`];
+      const timeFora=slots[`${cr.id}|${cr.f}`];
+      const jogoConf=(elimJogos["32avos"]||[]).find(j=>j.id===cr.id);
+      const resJ=jogoConf?(elimResG[jogoConf.id]||null):null;
+      const palJ=(pals.elim||{})[cr.id];
 
       const row=document.createElement("div");
-      row.style.cssText="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:#0a1525;border-radius:8px;padding:8px 10px;flex-wrap:wrap";
+      row.style.cssText="display:flex;align-items:center;gap:6px;margin-bottom:8px;background:#0a1525;border-radius:8px;padding:7px 10px;flex-wrap:wrap";
 
-      // Label do jogo
-      const lbl=document.createElement("div");
-      lbl.style.cssText="font-size:.65rem;color:#3a5a7a;min-width:28px";
-      lbl.textContent=cr.label;
-      row.appendChild(lbl);
+      const lbl=document.createElement("span");lbl.style.cssText="font-size:.65rem;color:#3a5a7a;min-width:28px;font-weight:700";lbl.textContent=cr.lb;row.appendChild(lbl);
 
       // Time casa
-      const tc=document.createElement("div");
-      tc.style.cssText="flex:1;text-align:right;font-size:.78rem";
-      if(timeCasa) tc.innerHTML=`<span style="color:#ccc">${timeCasa}</span> ${BF(timeCasa)}`;
-      else tc.innerHTML=`<span style="color:#3a5a7a;font-style:italic">${cr.casa}</span>`;
+      const tc=document.createElement("div");tc.style.cssText="flex:1;text-align:right;font-size:.78rem;min-width:80px";
+      if(timeCasa)tc.innerHTML=`<span style="color:#ccc">${timeCasa}</span> ${BF(timeCasa)}`;
+      else tc.innerHTML=`<span style="color:#3a5a7a;font-style:italic;font-size:.68rem">${cr.c}</span>`;
       row.appendChild(tc);
 
-      // Palpite / placar
-      if(jogoConfirmado){
-        const jFake={...jogoConfirmado,c:jogoConfirmado.c,f:jogoConfirmado.f,d:cr.data,h:"",s:cr.sede};
-        const pEl=criarJogoEl(jFake,true);
-        pEl.style.flex="2";pEl.style.margin="0";pEl.style.borderRadius="6px";
-        row.appendChild(pEl);
+      // Se jogo confirmado pelo admin, mostra palpite
+      if(jogoConf){
+        const jFake={id:cr.id,c:jogoConf.c,f:jogoConf.f,d:cr.dt,h:"",s:cr.s};
+        const bloq=!isAdmin&&!!resJ;
+        const jEl=criarJogoRow(jFake,palJ,resJ,bloq,true);
+        jEl.style.flex="2";jEl.style.margin="0";jEl.style.borderRadius="6px";
+        row.appendChild(jEl);
       } else {
-        const mid=document.createElement("div");
-        mid.style.cssText="flex:2;text-align:center;font-size:.8rem;color:#1e3a5f";
-        mid.innerHTML=`<span style="display:block;font-size:.62rem;color:#3a5a7a">${cr.data} · ${cr.sede}</span>${timeCasa&&timeFora?`<span style="color:#3b82f6">vs</span>`:res?"":timeCasa||timeFora?"⏳ aguardando...":"🔒 a definir"}`;
+        const mid=document.createElement("div");mid.style.cssText="flex:2;text-align:center;font-size:.72rem;color:#3b82f6;padding:4px";
+        mid.innerHTML=`<span style="display:block;font-size:.62rem;color:#3a5a7a">${cr.dt} · ${cr.s}</span>vs`;
         row.appendChild(mid);
       }
 
       // Time fora
-      const tf=document.createElement("div");
-      tf.style.cssText="flex:1;font-size:.78rem";
-      if(timeFora) tf.innerHTML=`${BF(timeFora)} <span style="color:#ccc">${timeFora}</span>`;
-      else tf.innerHTML=`<span style="color:#3a5a7a;font-style:italic">${cr.fora}</span>`;
+      const tf=document.createElement("div");tf.style.cssText="flex:1;font-size:.78rem;min-width:80px";
+      if(timeFora)tf.innerHTML=`${BF(timeFora)} <span style="color:#ccc">${timeFora}</span>`;
+      else tf.innerHTML=`<span style="color:#3a5a7a;font-style:italic;font-size:.68rem">${cr.f}</span>`;
       row.appendChild(tf);
 
       // Admin: confirmar jogo
-      if(isAdmin&&timeCasa&&timeFora&&!jogoConfirmado){
-        const btnC=document.createElement("button");
-        btnC.style.cssText="background:#22c55e;color:#000;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:.7rem;font-weight:700;white-space:nowrap";
-        btnC.textContent="Confirmar";
-        btnC.onclick=async()=>{
-          const novos=[...(elimJogos["32avos"]||[]),{id:cr.id,c:timeCasa,f:timeFora,fase:"32avos"}];
+      if(isAdmin&&timeCasa&&timeFora&&!jogoConf){
+        const bc=document.createElement("button");
+        bc.style.cssText="background:#22c55e;color:#000;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:.68rem;font-weight:700;white-space:nowrap";
+        bc.textContent="✓ Confirmar";
+        bc.onclick=async()=>{
+          const novos=[...(elimJogos["32avos"]||[]),{id:cr.id,c:timeCasa,f:timeFora}];
           elimJogos["32avos"]=novos;
-          await fbSet("bolao","shared",{elimJogos});
-          toast("Jogo confirmado ✅");renderTela();
+          await fbS("bolao","shared",{elimJogos});
+          toast("Jogo confirmado ✅");renderApp();
         };
-        row.appendChild(btnC);
+        row.appendChild(bc);
       }
       box.appendChild(row);
     });
     cont.appendChild(box);
 
-    // Melhores terceiros colocados (simulado com palpites + reais)
+    // Tabela de todos os terceiros
     cont.appendChild(criarTabTerceiros(rm));
 
   } else {
-    // Outras fases: manual
-    renderElimFaseManual(cont,faseAtiva);
+    renderElimFase(cont,faseTab);
   }
 }
 
-function criarTabTerceiros(res){
-  // res = resultados mesclados (palpites + reais)
-  const resUsado = res || buildResMesclado();
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "background:#0a0f08;border:1px solid #1a3a1a;border-radius:12px;overflow:hidden;margin-bottom:14px";
-
-  const titulo = document.createElement("div");
-  titulo.style.cssText = "padding:8px 12px;background:#0a1a0a;font-size:.72rem;font-weight:800;color:#f59e0b;letter-spacing:1px;border-bottom:1px solid #1a3a1a;display:flex;justify-content:space-between;align-items:center";
-  titulo.innerHTML = "<span>🥉 TODOS OS TERCEIROS COLOCADOS</span><span style='background:#1a2a4a;color:#93c5fd;font-size:.58rem;padding:1px 5px;border-radius:4px'>SIMULADO</span>";
+function criarTabTerceiros(rm){
+  const wrap=document.createElement("div");
+  wrap.style.cssText="background:#0a0f08;border:1px solid #1a3a1a;border-radius:12px;overflow:hidden;margin-bottom:14px";
+  const titulo=document.createElement("div");
+  titulo.style.cssText="padding:8px 12px;background:#0a1a0a;font-size:.72rem;font-weight:800;color:#f59e0b;border-bottom:1px solid #1a3a1a;display:flex;justify-content:space-between;align-items:center";
+  titulo.innerHTML="<span>🥉 TODOS OS TERCEIROS COLOCADOS</span><span style='background:#1a2a4a;color:#93c5fd;font-size:.58rem;padding:1px 5px;border-radius:4px'>SIMULADO</span>";
   wrap.appendChild(titulo);
 
-  const todos = getMelhoresTerceiros(resUsado);
-
-  if (todos.length === 0) {
-    const msg = document.createElement("div");
-    msg.style.cssText = "padding:14px;text-align:center;color:#3a6a3a;font-size:.75rem";
-    msg.textContent = "Aguardando resultados dos grupos...";
-    wrap.appendChild(msg);
-    return wrap;
+  const todos=top8Terceiros(rm);
+  if(todos.length===0){
+    const m=document.createElement("div");m.style.cssText="padding:14px;text-align:center;color:#3a6a3a;font-size:.75rem";
+    m.textContent="Preencha palpites de todos os grupos para ver a classificação dos terceiros";
+    wrap.appendChild(m);return wrap;
   }
 
-  const cols = "20px 20px 1fr 22px 24px 24px 28px 28px";
-  const header = document.createElement("div");
-  header.style.cssText = `display:grid;grid-template-columns:${cols};gap:1px;padding:5px 10px;font-size:.62rem;color:#4a7a4a;font-weight:700;border-bottom:1px solid #0d1a0d;text-align:center`;
-  header.innerHTML = "<div>#</div><div>Gr</div><div style='text-align:left'>Time</div><div>J</div><div>GF</div><div>GC</div><div>SG</div><div>Pts</div>";
-  wrap.appendChild(header);
+  const cols="22px 20px 1fr 22px 24px 24px 28px 28px";
+  const hdr=document.createElement("div");
+  hdr.style.cssText=`display:grid;grid-template-columns:${cols};gap:1px;padding:5px 10px;font-size:.62rem;color:#4a7a4a;font-weight:700;border-bottom:1px solid #0d1a0d;text-align:center`;
+  hdr.innerHTML="<div>#</div><div>Gr</div><div style='text-align:left'>Time</div><div>J</div><div>GF</div><div>GC</div><div>SG</div><div>Pts</div>";
+  wrap.appendChild(hdr);
 
-  // Mostra TODOS os 12 terceiros com linha de corte após o 8º
-  todos.forEach((s, i) => {
-    // Linha divisória antes do 9º (os que NÃO classificam)
-    if (i === 8) {
-      const div = document.createElement("div");
-      div.style.cssText = "border-top:2px dashed #3a2a00;padding:4px 10px;font-size:.6rem;color:#f87171;text-align:center;background:rgba(248,113,113,0.05)";
-      div.textContent = "── abaixo não classificam ──";
+  todos.forEach((s,i)=>{
+    if(i===8){
+      const div=document.createElement("div");
+      div.style.cssText="border-top:2px dashed #3a2a00;padding:3px 10px;font-size:.6rem;color:#f87171;text-align:center;background:rgba(248,113,113,0.05)";
+      div.textContent="── não classificam ──";
       wrap.appendChild(div);
     }
-    const classificado = i < 8;
-    const cor = classificado ? "#f59e0b" : "#3a3a3a";
-    const bg = i === 7 ? "rgba(245,158,11,0.1)" : classificado ? "rgba(245,158,11,0.04)" : "transparent";
-    const sgStr = s.sg > 0 ? `+${s.sg}` : `${s.sg}`;
-    const sgCor = s.sg > 0 ? "#22c55e" : s.sg < 0 ? "#f87171" : "#888";
-    const badge = classificado ? '<span style="font-size:.5rem;background:#f59e0b;color:#000;border-radius:3px;padding:0 2px;margin-left:1px">✓</span>' : '';
-
-    const row = document.createElement("div");
-    row.style.cssText = `display:grid;grid-template-columns:${cols};gap:1px;padding:6px 10px;font-size:.72rem;border-bottom:1px solid #0a0f0a;align-items:center;text-align:center;background:${bg}`;
-    row.innerHTML = `
-      <div style="color:${cor};font-weight:800">${i+1}${badge}</div>
-      <div style="color:#888;font-weight:700">${s.grupo}</div>
-      <div style="text-align:left;display:flex;align-items:center;gap:2px"><span>${BF(s.t)}</span><span style="color:${classificado?"#ddd":"#555"};font-size:.68rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.t}</span></div>
-      <div style="color:#999">${s.j}</div>
-      <div style="color:#999">${s.gf}</div>
-      <div style="color:#999">${s.gc}</div>
-      <div style="color:${sgCor};font-weight:700">${sgStr}</div>
-      <div style="color:${cor};font-weight:900">${s.pts}</div>
-    `;
+    const ok=i<8;const cor=ok?"#f59e0b":"#3a3a3a";
+    const bg=i===7?"rgba(245,158,11,0.1)":ok?"rgba(245,158,11,0.04)":"transparent";
+    const sg=s.sg>0?`+${s.sg}`:`${s.sg}`;
+    const sgC=s.sg>0?"#22c55e":s.sg<0?"#f87171":"#888";
+    const row=document.createElement("div");
+    row.style.cssText=`display:grid;grid-template-columns:${cols};gap:1px;padding:6px 10px;font-size:.72rem;border-bottom:1px solid #0a0f0a;align-items:center;text-align:center;background:${bg}`;
+    row.innerHTML=`<div style="color:${cor};font-weight:800">${i+1}${ok?'<span style="font-size:.5rem;background:#f59e0b;color:#000;border-radius:2px;padding:0 2px;margin-left:1px">✓</span>':''}</div><div style="color:#888;font-weight:700">${s.grupo}</div><div style="text-align:left;display:flex;align-items:center;gap:2px"><span>${BF(s.t)}</span><span style="color:${ok?"#ddd":"#555"};font-size:.68rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.t}</span></div><div style="color:#999">${s.j}</div><div style="color:#999">${s.gf}</div><div style="color:#999">${s.gc}</div><div style="color:${sgC};font-weight:700">${sg}</div><div style="color:${cor};font-weight:900">${s.pts}</div>`;
     wrap.appendChild(row);
   });
 
-  if (todos.length === 0) {
-    const msg = document.createElement("div");
-    msg.style.cssText = "padding:14px;text-align:center;color:#3a6a3a;font-size:.75rem";
-    msg.textContent = "Preencha seus palpites para simular!";
-    wrap.appendChild(msg);
-  }
-
-  const leg = document.createElement("div");
-  leg.style.cssText = "padding:6px 10px;font-size:.6rem;color:#3a4a3a;line-height:1.8";
-  leg.innerHTML = "<span style='color:#f59e0b'>✓</span> Top 8 avançam para os 32-avos &nbsp;|&nbsp; 📝 Baseado nos palpites + reais &nbsp;|&nbsp; Desempate: Pts → SG → GF";
+  const leg=document.createElement("div");leg.style.cssText="padding:6px 10px;font-size:.6rem;color:#3a4a3a";
+  leg.innerHTML="<span style='color:#f59e0b'>✓</span> Top 8 avançam · Desempate: Pts → SG → GF";
   wrap.appendChild(leg);
-
   return wrap;
 }
 
-function renderElimFaseManual(cont,fase){
-  const box1=document.createElement("div");
-  box1.style.cssText="background:#080f1a;border:1px solid #1e3a5f;border-radius:12px;padding:14px;margin-bottom:14px";
-  box1.innerHTML=`<div style="font-weight:800;color:#93c5fd;font-size:.78rem;margin-bottom:10px;letter-spacing:1px">ETAPA 1 — ACERTE OS CONFRONTOS (+2pts cada)</div>`;
+function renderElimFase(cont,fase){
+  const box=document.createElement("div");
+  box.style.cssText="background:#080f1a;border:1px solid #1e3a5f;border-radius:12px;padding:14px;margin-bottom:14px";
+  box.innerHTML=`<div style="font-weight:800;color:#93c5fd;font-size:.78rem;margin-bottom:10px;letter-spacing:1px">ETAPA 1 — ACERTE OS CONFRONTOS (+2pts cada)</div>`;
 
   const fConfs=confReais[fase]||Array(FASES_N[fase]).fill(null).map((_,i)=>({i,casa:null,fora:null}));
+  const TIMES=Object.values(GR).flat();
   for(let idx=0;idx<FASES_N[fase];idx++){
-    const cr=fConfs[idx]||{},cp=(pals.conf||{})[fase]||[],cpI=cp[idx]||{};
-    const acertou=cr.casa&&cr.fora&&cpI.casa===cr.casa&&cpI.fora===cr.fora;
+    const cr=fConfs[idx]||{};const cp=((pals.conf||{})[fase]||[])[idx]||{};
+    const acertou=cr.casa&&cr.fora&&cp.casa===cr.casa&&cp.fora===cr.fora;
     const row=document.createElement("div");
     row.style.cssText="display:flex;gap:6px;align-items:center;margin-bottom:7px;background:#0a1525;border-radius:8px;padding:7px 10px;flex-wrap:wrap";
     const num=document.createElement("span");num.style.cssText="color:#3a5a7a;font-size:.7rem;min-width:20px";num.textContent=`#${idx+1}`;row.appendChild(num);
-    const mkSel=(val,ph,cb,bg,bc)=>{const s=document.createElement("select");s.style.cssText=`background:${bg||"#0a1525"};border:1px solid ${bc||"#1e3a5f"};color:#fff;border-radius:6px;padding:5px 6px;font-size:.75rem;outline:none;flex:1;max-width:140px`;const o0=document.createElement("option");o0.value="";o0.textContent=ph;s.appendChild(o0);TODOS_TIMES.forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=`${BF(t)} ${t}`;if(t===val)o.selected=true;s.appendChild(o);});s.addEventListener("change",e=>cb(e.target.value));return s;};
-    row.appendChild(mkSel(cpI.casa,"Time casa",v=>{if(!pals.conf)pals.conf={};if(!pals.conf[fase])pals.conf[fase]=[];pals.conf[fase][idx]={...(pals.conf[fase][idx]||{}),casa:v};agendarSave();}));
+    const mkSel=(val,ph,cb,bg2,bc)=>{
+      const s=document.createElement("select");s.style.cssText=`background:${bg2||"#0a1525"};border:1px solid ${bc||"#1e3a5f"};color:#fff;border-radius:6px;padding:5px 6px;font-size:.75rem;outline:none;flex:1;max-width:140px`;
+      const o0=document.createElement("option");o0.value="";o0.textContent=ph;s.appendChild(o0);
+      TIMES.forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=`${BF(t)} ${t}`;if(t===val)o.selected=true;s.appendChild(o);});
+      s.addEventListener("change",e=>cb(e.target.value));return s;
+    };
+    row.appendChild(mkSel(cp.casa,"Time casa",v=>{if(!pals.conf)pals.conf={};if(!pals.conf[fase])pals.conf[fase]=[];pals.conf[fase][idx]={...(pals.conf[fase][idx]||{}),casa:v};agendarSave();}));
     const x=document.createElement("span");x.style.cssText="color:#3b82f6;font-weight:900";x.textContent="×";row.appendChild(x);
-    row.appendChild(mkSel(cpI.fora,"Time fora",v=>{if(!pals.conf)pals.conf={};if(!pals.conf[fase])pals.conf[fase]=[];pals.conf[fase][idx]={...(pals.conf[fase][idx]||{}),fora:v};agendarSave();}));
+    row.appendChild(mkSel(cp.fora,"Time fora",v=>{if(!pals.conf)pals.conf={};if(!pals.conf[fase])pals.conf[fase]=[];pals.conf[fase][idx]={...(pals.conf[fase][idx]||{}),fora:v};agendarSave();}));
     if(acertou){const ok=document.createElement("span");ok.style.cssText="color:#22c55e;font-weight:900;font-size:.75rem";ok.textContent="+2✓";row.appendChild(ok);}
     if(isAdmin){
       const s2=document.createElement("span");s2.style.cssText="color:#FFD700;margin-left:4px;font-size:.7rem";s2.textContent="Real:";row.appendChild(s2);
-      row.appendChild(mkSel(cr.casa,"Casa",async v=>{if(!confReais[fase])confReais[fase]=Array(FASES_N[fase]).fill(null).map((_,i)=>({i,casa:null,fora:null}));confReais[fase][idx]={...confReais[fase][idx],casa:v};await fbSet("bolao","shared",{confReais});},"#1a1500","#FFD700"));
+      row.appendChild(mkSel(cr.casa,"Casa",async v=>{if(!confReais[fase])confReais[fase]=Array(FASES_N[fase]).fill(null).map((_,i2)=>({i:i2,casa:null,fora:null}));confReais[fase][idx]={...confReais[fase][idx],casa:v};await fbS("bolao","shared",{confReais});toast("✅");},"#1a1500","#FFD700"));
       const x2=document.createElement("span");x2.style.cssText="color:#FFD700;font-weight:900";x2.textContent="×";row.appendChild(x2);
-      row.appendChild(mkSel(cr.fora,"Fora",async v=>{if(!confReais[fase])confReais[fase]=Array(FASES_N[fase]).fill(null).map((_,i)=>({i,casa:null,fora:null}));confReais[fase][idx]={...confReais[fase][idx],fora:v};await fbSet("bolao","shared",{confReais});},"#1a1500","#FFD700"));
+      row.appendChild(mkSel(cr.fora,"Fora",async v=>{if(!confReais[fase])confReais[fase]=Array(FASES_N[fase]).fill(null).map((_,i2)=>({i:i2,casa:null,fora:null}));confReais[fase][idx]={...confReais[fase][idx],fora:v};await fbS("bolao","shared",{confReais});toast("✅");},"#1a1500","#FFD700"));
     }
-    box1.appendChild(row);
+    box.appendChild(row);
   }
   if(isAdmin){
-    const btnC=document.createElement("button");
-    btnC.style.cssText="background:#22c55e;color:#000;border:none;border-radius:8px;padding:10px;width:100%;font-weight:700;cursor:pointer;margin-top:8px";
-    btnC.textContent="✅ Confirmar confrontos → liberar placares";
-    btnC.onclick=async()=>{
+    const bc=document.createElement("button");bc.style.cssText="background:#22c55e;color:#000;border:none;border-radius:8px;padding:10px;width:100%;font-weight:700;cursor:pointer;margin-top:8px";
+    bc.textContent="✅ Confirmar confrontos → liberar placares";
+    bc.onclick=async()=>{
       const jogos=(confReais[fase]||[]).filter(c=>c?.casa&&c?.fora).map((c,i)=>({id:`${fase}_${i}`,c:c.casa,f:c.fora}));
-      elimJogos[fase]=jogos;await fbSet("bolao","shared",{elimJogos});toast(`${jogos.length} jogos confirmados ✅`);renderTela();
+      elimJogos[fase]=jogos;await fbS("bolao","shared",{elimJogos});toast(`${jogos.length} jogos confirmados ✅`);renderApp();
     };
-    box1.appendChild(btnC);
+    box.appendChild(bc);
   }
-  cont.appendChild(box1);
+  cont.appendChild(box);
 
   const jogosF=elimJogos[fase]||[];
   if(jogosF.length>0){
-    const box2=document.createElement("div");
-    box2.style.cssText="background:#080f08;border:1px solid #1a3a1a;border-radius:12px;padding:14px";
+    const box2=document.createElement("div");box2.style.cssText="background:#080f08;border:1px solid #1a3a1a;border-radius:12px;padding:14px";
     box2.innerHTML=`<div style="font-weight:800;color:#86efac;font-size:.78rem;margin-bottom:10px;letter-spacing:1px">ETAPA 2 — PALPITE OS PLACARES (+10 exato / +5 vencedor)</div>`;
-    jogosF.forEach(j=>box2.appendChild(criarJogoEl({...j,d:"",h:"",s:FASES_L[fase]},true)));
+    jogosF.forEach(j=>{
+      const pal=(pals.elim||{})[j.id];const res=elimResG[j.id];
+      box2.appendChild(criarJogoRow({...j,d:"",h:"",s:FASES_L[fase]},pal,res,!isAdmin&&!!res,true));
+    });
     cont.appendChild(box2);
   }
 }
 
-// ═══════════════════════════════════════
-// RANKING
-// ═══════════════════════════════════════
+// ── RANKING ─────────────────────────────────────────
 function renderRanking(cont){
   const hd=document.createElement("div");
   hd.style.cssText="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px";
   hd.innerHTML=`<div style="font-weight:900;color:#FFD700;font-size:1.05rem">🏆 Ranking</div>`;
-  const btnAt=document.createElement("button");btnAt.style.cssText="background:#1a3a1a;color:#86efac;border:none;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.72rem;font-weight:700";btnAt.textContent="↺ Atualizar";btnAt.onclick=()=>carregarRanking(cont);
-  hd.appendChild(btnAt);cont.appendChild(hd);
-  const lista=document.createElement("div");lista.id="rankLista";cont.appendChild(lista);
-  carregarRanking(cont);
+  const ba=document.createElement("button");ba.style.cssText="background:#1a3a1a;color:#86efac;border:none;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.72rem;font-weight:700";ba.textContent="↺ Atualizar";ba.onclick=()=>carregarRanking(lista);
+  hd.appendChild(ba);cont.appendChild(hd);
+  const lista=document.createElement("div");lista.id="rl";cont.appendChild(lista);
+  carregarRanking(lista);
 }
 
-async function carregarRanking(cont){
-  const lista=document.getElementById("rankLista");
+async function carregarRanking(lista){
   if(!lista)return;
   lista.innerHTML=`<div style="text-align:center;color:#3a6a3a;padding:20px">Carregando...</div>`;
-  const snap=await fbGet("bolao","shared");
-  if(snap){participantes=snap.participantes||[];resultados=snap.resultados||{};confReais=snap.confReais||{};elimJogos=snap.elimJogos||{};elimRes=snap.elimRes||{};}
+  const snap=await fbG("bolao","shared");
+  if(snap){participantes=snap.participantes||[];resReais=snap.resultados||{};confReais=snap.confReais||{};elimJogos=snap.elimJogos||{};elimResG=snap.elimRes||{};}
   const todos=[];
-  for(const p of participantes){const pal=await fbGet("palpites",p.id)||{};const pts=calcPts(pal.grupo||{},resultados,pal.conf||{},confReais,pal.elim||{},elimRes);todos.push({...p,pts});}
+  for(const p of participantes){
+    const pal=await fbG("palpites",p.id)||{};
+    const pts=calcPts(pal.grupo||{},resReais,pal.conf||{},confReais,pal.elim||{},elimResG);
+    todos.push({...p,pts});
+  }
   todos.sort((a,b)=>b.pts-a.pts);
   lista.innerHTML="";
   if(todos.length===0){lista.innerHTML=`<div style="color:#3a6a3a;text-align:center;padding:40px">Nenhum participante ainda.</div>`;return;}
@@ -1118,147 +853,84 @@ async function carregarRanking(cont){
     const el=document.createElement("div");
     el.style.cssText=`display:flex;align-items:center;gap:10px;background:${isEu?"linear-gradient(135deg,#0a1a0a,#061a06)":"#080d08"};border:2px solid ${i===0?"#FFD700":i===1?"#888":i===2?"#cd7f32":isEu?"#22c55e":"#1a3a1a"};border-radius:12px;padding:12px 14px;margin-bottom:8px`;
     el.innerHTML=`<span style="font-size:1.4rem;width:32px;text-align:center">${i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}º`}</span><div style="flex:1"><div style="font-weight:700">${p.nome} ${isEu?'<span style="color:#22c55e;font-size:.68rem">(você)</span>':''}</div><div style="font-size:.68rem;color:#3a6a3a">${p.email}</div></div><div style="font-weight:900;font-size:1.4rem;color:${i===0?"#FFD700":"#fff"}">${p.pts}<span style="font-size:.65rem;color:#3a6a3a;font-weight:400;margin-left:2px">pts</span></div>`;
+    el.onclick=()=>verPalpites(p,lista);
     lista.appendChild(el);
   });
-  const info=document.createElement("div");
-  info.style.cssText="margin-top:14px;padding:10px 14px;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:10px;font-size:.72rem;color:#3a6a3a;line-height:1.9";
-  info.innerHTML="🎯 Placar exato → <strong style='color:#FFD700'>10pts</strong> &nbsp;|&nbsp; ✅ Vencedor → <strong style='color:#FFD700'>5pts</strong> &nbsp;|&nbsp; 🗓️ Confronto elim. → <strong style='color:#FFD700'>2pts</strong>";
+  const info=document.createElement("div");info.style.cssText="margin-top:14px;padding:10px 14px;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:10px;font-size:.72rem;color:#3a6a3a;line-height:1.9";
+  info.innerHTML="🎯 Exato → <strong style='color:#FFD700'>10pts</strong> &nbsp;|&nbsp; ✅ Vencedor → <strong style='color:#FFD700'>5pts</strong> &nbsp;|&nbsp; 🗓️ Confronto → <strong style='color:#FFD700'>2pts</strong>";
   lista.appendChild(info);
 }
 
-// ═══════════════════════════════════════
-// ADMIN
-// ═══════════════════════════════════════
-function renderAdmin(cont){
-  cont.innerHTML=`<div style="font-weight:900;color:#FFD700;font-size:1.05rem;margin-bottom:16px">⚙️ Admin ${isAdmin?'<span style="color:#22c55e;font-size:.7rem">● ATIVO</span>':''}</div>`;
-  if(!isAdmin){
-    cont.innerHTML+=`<div style="max-width:300px"><div style="color:#86efac;font-size:.78rem;margin-bottom:8px">Senha:</div><div style="display:flex;gap:8px"><input id="inSenha" type="password" placeholder="Senha..." style="flex:1;padding:10px 12px;border-radius:8px;border:2px solid #1a3a1a;background:#061506;color:#fff;outline:none"/><button onclick="window.tentarAdmin()" style="background:#22c55e;color:#000;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-weight:700">Entrar</button></div><div style="color:#2a4a2a;font-size:.7rem;margin-top:8px">Padrão: copa2026</div></div>`;
-    document.getElementById("inSenha")?.addEventListener("keydown",e=>{if(e.key==="Enter")window.tentarAdmin();});
-  } else {
-    const info=document.createElement("div");
-    info.style.cssText="background:#061a06;border:1px solid #22c55e;border-radius:10px;padding:12px;margin-bottom:14px;color:#86efac;font-size:.8rem;line-height:1.6";
-    info.innerHTML="✅ Use <strong>Grupos</strong> para lançar resultados.<br>A classificação atualiza automaticamente.<br>Em <strong>Elim. → 32-avos</strong>, confirme cada jogo quando os times estiverem definidos.";
-    cont.appendChild(info);
-    const btnS=document.createElement("button");btnS.style.cssText="background:#1a0a0a;color:#f87171;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-weight:700";btnS.textContent="🔒 Sair do Admin";btnS.onclick=()=>{isAdmin=false;renderTela();toast("Admin desativado.");};cont.appendChild(btnS);
-    // Painel de participantes detalhado
-    const partDiv=document.createElement("div");
-    partDiv.style.cssText="margin-top:14px;padding:12px;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:10px";
-    partDiv.innerHTML=`<div style="color:#86efac;font-size:.75rem;font-weight:700;margin-bottom:10px">👥 PARTICIPANTES (${participantes.length})</div>`;
-
-    participantes.forEach(p => {
-      const row = document.createElement("div");
-      const travado = !!p.travado;
-      row.style.cssText = `display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px;background:${travado?"#061a06":"#0d0d0d"};border:1px solid ${travado?"#1a4a1a":"#1a1a1a"};border-radius:8px;cursor:pointer`;
-      row.innerHTML = `
-        <div style="flex:1">
-          <div style="font-size:.8rem;color:${travado?"#86efac":"#888"};font-weight:700">${p.nome}</div>
-          <div style="font-size:.65rem;color:#3a6a3a">${p.email}</div>
-        </div>
-        <div style="font-size:.7rem">${travado?'<span style="background:#166534;color:#86efac;padding:2px 6px;border-radius:4px;font-weight:700">🔒 Travado</span>':'<span style="background:#1a1a1a;color:#666;padding:2px 6px;border-radius:4px">⏳ Editando</span>'}</div>
-        <div style="font-size:.7rem;color:#4a7a4a">▶</div>
-      `;
-      row.onclick = () => abrirPalpitesParticipante(p);
-      partDiv.appendChild(row);
-    });
-
-    if(participantes.length === 0){
-      partDiv.innerHTML += '<div style="color:#3a6a3a;font-size:.75rem">Nenhum participante ainda.</div>';
-    }
-    cont.appendChild(partDiv);
-  }
-}
-
-window.tentarAdmin=function(){
-  const s=document.getElementById("inSenha")?.value;
-  if(s===SENHA_ADMIN){isAdmin=true;renderTela();toast("Admin ativo ✅");}
-  else toast("Senha incorreta!","#ef4444");
-};
-
-// ═══════════════════════════════════════
-// ADMIN: VER PALPITES DE PARTICIPANTE
-// ═══════════════════════════════════════
-async function abrirPalpitesParticipante(p){
-  const ov = document.createElement("div");
-  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:999;overflow-y:auto;padding:20px";
-
-  const box = document.createElement("div");
-  box.style.cssText = "max-width:600px;margin:0 auto;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:16px;padding:20px";
-
-  box.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div>
-        <div style="font-weight:900;color:#22c55e;font-size:1rem">${p.nome}</div>
-        <div style="font-size:.7rem;color:#3a6a3a">${p.email} · ${p.travado?"🔒 Travado":"⏳ Em edição"}</div>
-      </div>
-      <button onclick="this.closest('[style*=fixed]').remove()" style="background:#1a0a0a;color:#f87171;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700">✕ Fechar</button>
-    </div>
-  `;
-
-  const loading = document.createElement("div");
-  loading.style.cssText = "text-align:center;color:#3a6a3a;padding:20px";
-  loading.textContent = "Carregando palpites...";
-  box.appendChild(loading);
-  ov.appendChild(box);
-  document.body.appendChild(ov);
-
-  const palP = await fbGet("palpites", p.id) || {};
-  const pts = calcPts(palP.grupo||{}, resultados, palP.conf||{}, confReais, palP.elim||{}, elimRes);
-
-  loading.remove();
-
-  // Pontuação total
-  const ptDiv = document.createElement("div");
-  ptDiv.style.cssText = "background:#061506;border:1px solid #22c55e;border-radius:10px;padding:12px;text-align:center;margin-bottom:14px";
-  ptDiv.innerHTML = `<div style="font-size:.75rem;color:#3a6a3a">PONTUAÇÃO ATUAL</div><div style="font-size:2rem;font-weight:900;color:#22c55e">${pts}<span style="font-size:.8rem;color:#3a6a3a"> pts</span></div>`;
+async function verPalpites(p,lista){
+  if(!isAdmin&&p.id!==usuario?.id)return;
+  const palP=await fbG("palpites",p.id)||{};
+  const pts=calcPts(palP.grupo||{},resReais,palP.conf||{},confReais,palP.elim||{},elimResG);
+  const ov=document.createElement("div");
+  ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:999;overflow-y:auto;padding:20px";
+  const box=document.createElement("div");box.style.cssText="max-width:600px;margin:0 auto;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:16px;padding:20px";
+  box.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div><div style="font-weight:900;color:#22c55e;font-size:1rem">${p.nome}</div><div style="font-size:.7rem;color:#3a6a3a">${p.email}</div></div><button onclick="this.closest('[style*=fixed]').remove()" style="background:#1a0a0a;color:#f87171;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700">✕</button></div>`;
+  const ptDiv=document.createElement("div");ptDiv.style.cssText="background:#061506;border:1px solid #22c55e;border-radius:10px;padding:12px;text-align:center;margin-bottom:14px";
+  ptDiv.innerHTML=`<div style="font-size:.75rem;color:#3a6a3a">PONTUAÇÃO ATUAL</div><div style="font-size:2rem;font-weight:900;color:#22c55e">${pts}<span style="font-size:.8rem;color:#3a6a3a"> pts</span></div>`;
   box.appendChild(ptDiv);
-
-  // Palpites por grupo
-  Object.keys(GRUPOS).forEach(g => {
-    const secTit = document.createElement("div");
-    secTit.style.cssText = "font-size:.72rem;font-weight:800;color:#86efac;margin:12px 0 6px;letter-spacing:1px";
-    secTit.textContent = `GRUPO ${g}`;
-    box.appendChild(secTit);
-
-    JOGOS.filter(j=>j.g===g).forEach(j => {
-      const palJ = (palP.grupo||{})[j.id];
-      const resJ = resultados[j.id];
-      let badge = '';
-      if(resJ && palJ && palJ.c!=null){
-        if(palJ.c===resJ.c&&palJ.f===resJ.f) badge='<span style="background:#22c55e;color:#000;font-size:.6rem;padding:1px 5px;border-radius:10px;font-weight:700">+10</span>';
-        else { const vR=resJ.c>resJ.f?1:resJ.f>resJ.c?-1:0,vP=palJ.c>palJ.f?1:palJ.f>palJ.c?-1:0; if(vR===vP) badge='<span style="background:#f59e0b;color:#000;font-size:.6rem;padding:1px 5px;border-radius:10px;font-weight:700">+5</span>'; }
+  Object.keys(GR).forEach(g=>{
+    const sec=document.createElement("div");sec.style.cssText="font-size:.72rem;font-weight:800;color:#86efac;margin:12px 0 6px;letter-spacing:1px";sec.textContent=`GRUPO ${g}`;box.appendChild(sec);
+    JOGOS.filter(j=>j.g===g).forEach(j=>{
+      const palJ=(palP.grupo||{})[j.id];const resJ=resReais[j.id];
+      let badge="";
+      if(resJ&&palJ&&palJ.c!=null){
+        if(palJ.c===resJ.c&&palJ.f===resJ.f)badge='<span style="background:#22c55e;color:#000;font-size:.6rem;padding:1px 5px;border-radius:10px;font-weight:700">+10</span>';
+        else{const vR=resJ.c>resJ.f?1:resJ.f>resJ.c?-1:0,vP=palJ.c>palJ.f?1:palJ.f>palJ.c?-1:0;if(vR===vP)badge='<span style="background:#f59e0b;color:#000;font-size:.6rem;padding:1px 5px;border-radius:10px;font-weight:700">+5</span>';}
       }
-
-      const row = document.createElement("div");
-      row.style.cssText = "display:flex;align-items:center;gap:6px;padding:5px 8px;background:#060e06;border-radius:6px;margin-bottom:4px;font-size:.72rem";
-      row.innerHTML = `
-        <span style="color:#444;min-width:30px">${j.d}</span>
-        <span style="flex:1;text-align:right;color:#999">${j.c}</span>
-        <span style="background:#0d1a0d;border:1px solid #1a3a1a;border-radius:5px;padding:2px 8px;font-weight:700;color:${palJ&&palJ.c!=null?"#fff":"#333"}">${palJ&&palJ.c!=null?`${palJ.c} × ${palJ.f}`:"— × —"}</span>
-        <span style="flex:1;color:#999">${j.f}</span>
-        ${resJ?`<span style="color:#FFD700;font-size:.65rem">${resJ.c}×${resJ.f}</span>`:""}
-        ${badge}
-      `;
+      const row=document.createElement("div");row.style.cssText="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#060e06;border-radius:6px;margin-bottom:4px;font-size:.72rem";
+      row.innerHTML=`<span style="color:#444;min-width:30px">${j.d}</span><span style="flex:1;text-align:right;color:#999">${j.c}</span><span style="background:#0d1a0d;border:1px solid #1a3a1a;border-radius:5px;padding:2px 8px;font-weight:700;color:${palJ&&palJ.c!=null?"#fff":"#333"}">${palJ&&palJ.c!=null?`${palJ.c} × ${palJ.f}`:"— × —"}</span><span style="flex:1;color:#999">${j.f}</span>${resJ?`<span style="color:#FFD700;font-size:.65rem">${resJ.c}×${resJ.f}</span>`:""}${badge}`;
       box.appendChild(row);
     });
   });
+  ov.appendChild(box);document.body.appendChild(ov);
 }
 
-// ═══════════════════════════════════════
-// BOOT
-// ═══════════════════════════════════════
+// ── ADMIN ────────────────────────────────────────────
+function renderAdmin(cont){
+  cont.innerHTML=`<div style="font-weight:900;color:#FFD700;font-size:1.05rem;margin-bottom:16px">⚙️ Admin ${isAdmin?'<span style="color:#22c55e;font-size:.7rem">● ATIVO</span>':''}</div>`;
+  if(!isAdmin){
+    cont.innerHTML+=`<div style="max-width:300px"><div style="color:#86efac;font-size:.78rem;margin-bottom:8px">Senha:</div><div style="display:flex;gap:8px"><input id="iS" type="password" placeholder="Senha..." style="flex:1;padding:10px 12px;border-radius:8px;border:2px solid #1a3a1a;background:#061506;color:#fff;outline:none"/><button onclick="window._adm()" style="background:#22c55e;color:#000;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-weight:700">Entrar</button></div><div style="color:#2a4a2a;font-size:.7rem;margin-top:8px">Padrão: copa2026</div></div>`;
+    document.getElementById("iS")?.addEventListener("keydown",e=>{if(e.key==="Enter")window._adm();});
+  } else {
+    const info=document.createElement("div");info.style.cssText="background:#061a06;border:1px solid #22c55e;border-radius:10px;padding:12px;margin-bottom:14px;color:#86efac;font-size:.8rem;line-height:1.6";
+    info.innerHTML="✅ Use <strong>Grupos</strong> para lançar resultados.<br>Os palpites travam automaticamente 24h antes de cada jogo.";
+    cont.appendChild(info);
+    const bs=document.createElement("button");bs.style.cssText="background:#1a0a0a;color:#f87171;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-weight:700";bs.textContent="🔒 Sair do Admin";bs.onclick=()=>{isAdmin=false;renderApp();toast("Admin desativado.");};cont.appendChild(bs);
+    const pd=document.createElement("div");pd.style.cssText="margin-top:14px;padding:12px;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:10px";
+    pd.innerHTML=`<div style="color:#86efac;font-size:.75rem;font-weight:700;margin-bottom:8px">👥 PARTICIPANTES (${participantes.length})</div>`;
+    participantes.forEach(p=>{
+      const row=document.createElement("div");row.style.cssText="display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:5px;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;cursor:pointer";
+      row.innerHTML=`<div style="flex:1"><div style="font-size:.8rem;color:#86efac;font-weight:700">${p.nome}</div><div style="font-size:.65rem;color:#3a6a3a">${p.email}</div></div><div style="font-size:.72rem;color:#4a7a4a">Ver palpites ▶</div>`;
+      row.onclick=()=>verPalpites(p,null);
+      pd.appendChild(row);
+    });
+    cont.appendChild(pd);
+  }
+}
+
+window._adm=()=>{
+  const s=document.getElementById("iS")?.value;
+  if(s==="copa2026"){isAdmin=true;renderApp();toast("Admin ativo ✅");}
+  else toast("Senha incorreta!","#ef4444");
+};
+
+// ── BOOT ─────────────────────────────────────────────
 async function boot(){
-  const salvo=localStorage.getItem("bolao_usuario");
+  const salvo=localStorage.getItem("bu");
   if(salvo){
     try{
       usuario=JSON.parse(salvo);
-      const shared=await fbGet("bolao","shared")||{};
-      participantes=shared.participantes||[];resultados=shared.resultados||{};confReais=shared.confReais||{};elimJogos=shared.elimJogos||{};elimRes=shared.elimRes||{};
-      const pal=await fbGet("palpites",usuario.id);
-      if(pal)pals=pal;
-      telaAtual="grupos";listenShared();
-    }catch(e){usuario=null;telaAtual="login";}
+      const sh=await fbG("bolao","shared")||{};
+      participantes=sh.participantes||[];resReais=sh.resultados||{};confReais=sh.confReais||{};elimJogos=sh.elimJogos||{};elimResG=sh.elimRes||{};
+      const ps=await fbG("palpites",usuario.id);if(ps)pals=ps;
+      tela="grupos";listenShared();
+    }catch(e){usuario=null;tela="login";}
   }
-  renderTela();
+  renderApp();
 }
 boot();
 </script>
