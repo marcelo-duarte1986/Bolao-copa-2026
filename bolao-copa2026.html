@@ -226,7 +226,12 @@ const M495 = {
 function jogoTravado(jogo) {
   if (!jogo.dt) return false;
   const agora = new Date();
-  const inicio = new Date(jogo.dt);
+  // dt está em horário de Brasília (UTC-3)
+  // Adicionamos "T" e "-03:00" para forçar interpretação correta
+  const dtStr = jogo.dt.includes('+') || jogo.dt.includes('Z') || jogo.dt.includes('-03')
+    ? jogo.dt
+    : jogo.dt + '-03:00';
+  const inicio = new Date(dtStr);
   const prazo = new Date(inicio.getTime() - 1*60*60*1000); // 1h antes
   return agora >= prazo;
 }
