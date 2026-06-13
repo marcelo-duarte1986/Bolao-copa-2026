@@ -224,16 +224,8 @@ const M495 = {
 // HORÁRIO — trava 24h antes do jogo
 // ══════════════════════════════════════════════
 function jogoTravado(jogo) {
-  if (!jogo.dt) return false;
-  const agora = new Date();
-  // dt está em horário de Brasília (UTC-3)
-  // Adicionamos "T" e "-03:00" para forçar interpretação correta
-  const dtStr = jogo.dt.includes('+') || jogo.dt.includes('Z') || jogo.dt.includes('-03')
-    ? jogo.dt
-    : jogo.dt + '-03:00';
-  const inicio = new Date(dtStr);
-  const prazo = new Date(inicio.getTime() - 2*60*60*1000); // 2h antes
-  return agora >= prazo;
+  // Trava apenas quando o Admin lançar o resultado oficial
+  return false; // o bloqueio real é feito por !!res no criarJogoRow
 }
 
 // ══════════════════════════════════════════════
@@ -521,7 +513,7 @@ function renderGrupos(cont){
 
   const info=document.createElement("div");
   info.style.cssText="margin-top:10px;padding:10px 14px;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:10px;font-size:.72rem;color:#3a6a3a;line-height:1.9";
-  info.innerHTML="🎯 Placar exato → <strong style='color:#FFD700'>10pts</strong> &nbsp;|&nbsp; ✅ Vencedor → <strong style='color:#FFD700'>5pts</strong> &nbsp;|&nbsp; 🔒 Trava 2h antes do jogo";
+  info.innerHTML="🎯 Placar exato → <strong style='color:#FFD700'>10pts</strong> &nbsp;|&nbsp; ✅ Vencedor → <strong style='color:#FFD700'>5pts</strong> &nbsp;|&nbsp; 🔒 Trava após resultado oficial";
   cont.appendChild(info);
 }
 
