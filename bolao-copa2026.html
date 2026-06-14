@@ -224,8 +224,15 @@ const M495 = {
 // HORÁRIO — trava 24h antes do jogo
 // ══════════════════════════════════════════════
 function jogoTravado(jogo) {
-  // Trava apenas quando o Admin lançar o resultado oficial
-  return false; // o bloqueio real é feito por !!res no criarJogoRow
+  if (!jogo.dt) return false;
+  // Pega data e hora separados e monta usando horário local do browser
+  const partes = jogo.dt.split('T');
+  const [ano, mes, dia] = partes[0].split('-').map(Number);
+  const [hora, min] = partes[1].split(':').map(Number);
+  // Cria data no horário LOCAL do dispositivo (sem conversão UTC)
+  const inicio = new Date(ano, mes-1, dia, hora, min, 0);
+  const prazo = new Date(inicio.getTime() - 60*60*1000); // 1h antes
+  return new Date() >= prazo;
 }
 
 // ══════════════════════════════════════════════
