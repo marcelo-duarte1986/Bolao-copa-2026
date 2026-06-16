@@ -510,7 +510,7 @@ function renderGrupos(cont){
     const travado=jogoTravado(j);
     const pal=(pals.grupo||{})[j.id];
     const res=resReais[j.id];
-    const bloq=(!isAdmin&&travado)||(!isAdmin&&!!res);
+    const bloq = isAdmin ? false : (travado || !!res);
     cont.appendChild(criarJogoRow(j,pal,res,bloq,false));
   });
 
@@ -688,7 +688,7 @@ function renderElim(cont){
       // Se jogo confirmado pelo admin, mostra palpite
       if(jogoConf){
         const jFake={id:cr.id,c:jogoConf.c,f:jogoConf.f,d:cr.dt,h:"",s:cr.s};
-        const bloq=!isAdmin&&!!resJ;
+        const bloq = isAdmin ? false : !!resJ;
         const jEl=criarJogoRow(jFake,palJ,resJ,bloq,true);
         jEl.style.flex="2";jEl.style.margin="0";jEl.style.borderRadius="6px";
         row.appendChild(jEl);
